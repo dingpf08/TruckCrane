@@ -30,17 +30,22 @@ class DrawingWidget(QGraphicsView):
         #self.drawText()
         self.drawFirstShape(self.scene)
         self.drawSecondShape(self.scene)
-
-        x = 100
-        y=-102
+        #region 绘制边坡示意图
+        x,x0 = 100,100#起点x坐标
+        y,y0=-102,-102#起点y坐标
         dh=20
         dm=2#箭头
         l=100#箭头的跨度
         space=5#相邻两个箭头的间距
+        step=5
         while x <= 150:
-            self.paintArrow(x,y,dh,dm,l,space, self.scene)
-            x += 5
+            pen = QPen(Qt.yellow, 0.6)  # 黄色线段 0.3为
+            self.paintArrow(x,y,dh,dm,pen, self.scene)
+            x += step
 
+        self.scene.addLine(x0, y0-dh, x-step, y-dh, pen)
+        print(f"x和y的数值为：{x}，{y}")
+        # endregion 绘制示意图
         self.last_pos = QPointF()
         self.panning = False
 
@@ -78,17 +83,15 @@ class DrawingWidget(QGraphicsView):
         # 设置文本颜色为绿色
         text_item.setDefaultTextColor(QColor(0, 255, 0))
         scene.addItem(text_item)
-
-
-    def paintArrow(self,dx,dy,dh,dm,l,space,scene):
+    #绘制边坡顶的线段
+    def paintArrow(self,dx,dy,dh,dm,pen,scene):
         # 箭头参数
         x=dx#起点x坐标
         y =dy#起点y坐标
         h=dh#箭头长度
         m=dm#箭头标志偏离箭头点的长度
-
         # 绘制第二个图形
-        pen = QPen(Qt.yellow, 0.3)  # 黄色线段 0.3为
+
         # 定义三条线段
         lines = [((x, y-h), (x, y)),
                  ((x-m, y-m), (x, y)),
@@ -98,7 +101,6 @@ class DrawingWidget(QGraphicsView):
         for line in lines:
             start_point, end_point = line
             scene.addLine(start_point[0], start_point[1], end_point[0], end_point[1], pen)
-
 
     def drawText(self):
         # 设置文字的颜色和字体
