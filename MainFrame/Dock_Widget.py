@@ -11,9 +11,30 @@ class CalculateDockWidget(QDockWidget):
         self.dock_widget_contents.addItems(['条目1', '条目2', '条目3'])
         self.setWidget(self.dock_widget_contents)
         self.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        # 连接双击信号到槽函数
+        self.dock_widget_contents.itemDoubleClicked.connect(self.on_item_double_clicked)
+
+    def on_item_double_clicked(self, item):
+        # 获取关联的UUID
+        struuid = item.data(Qt.UserRole)
+        mainframe=self.parent()#获取父窗口
+        if mainframe:
+            Table_bar=mainframe.m_ECST#获取Table_Bar
+            dialog=Table_bar.get_dialog_by_uuid(struuid)#根据uuid获取对话框
+            dialogname=dialog.m_name
+            if dialogname:
+                index = Table_bar.AddNewLable(dialogname, dialog, struuid)  # 给上面添加标签页
+                Table_bar.setCurrentIndex(index)  # 显示当前的标签页
+
+
+        #通过标签页对话框获取uuid对应的对话框 然后将对话框附加到标签页 self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例的字典
+
+
     #给根目录下添加节点
-    def add_item_by_name(self, item_name):
+    def add_item_by_name(self, item_name,struuid):
         item = QListWidgetItem(item_name)
+        # 关联UUID到列表项，使用Qt.UserRole来存储自定义数据
+        item.setData(Qt.UserRole, struuid)
         self.dock_widget_contents.addItem(item)
 
 def main():

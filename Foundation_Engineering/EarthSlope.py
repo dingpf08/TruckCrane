@@ -1,4 +1,6 @@
 import sys
+import uuid
+
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
@@ -7,6 +9,8 @@ from DrawGraphinsScene.DrawSharpPic import MultipleViewports as DrawArea  # 自�
 class EarthSlopeDialog(QDialog):
     def __init__(self):
         super().__init__()
+        self.m_name="土方边坡计算对话框"
+        self.uuid = uuid.uuid4()  # 生成一个唯一的UUID
         self.initUI()
 
     def initUI(self):
@@ -71,7 +75,8 @@ class EarthSlopeDialog(QDialog):
 
         # 设置对话框的主布局
         self.setLayout(main_layout)
-
+    def Getuuid(self):
+        return self.uuid
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     earth_slope_dialog = EarthSlopeDialog()

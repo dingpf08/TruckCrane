@@ -5,13 +5,25 @@ from PyQt5.QtGui import QMouseEvent
 #父窗口是class MainWindow(QMainWindow)
 from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
 #标签页，管理各种对话框
+#这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
 class ECSTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super(ECSTabWidget, self).__init__(parent)
         self.m_Name="标签页管理对话框"
+        self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例,都放到内存里面
         self.init_ui()
 
-
+    def get_dialog_by_uuid(self, uuid):
+        """
+        根据提供的UUID，从字典中找到并返回对应的对话框实例。
+        如果找不到，返回None。
+        """
+        dialog = self.m_dialog_uuid_map.get(uuid)
+        if dialog:
+            return dialog
+        else:
+            print(f"找不到UUID为 {uuid} 的对话框。")
+            return None
     #region 初始化函数
     def init_ui(self):
         # 标签1
@@ -47,7 +59,7 @@ class ECSTabWidget(QTabWidget):
 
     # region 添加新的标签页
         #strName为标签的名字，dialog为QWidget对话框
-    def AddNewLable(self,strName,dialog):#默认添加的是QWidget
+    def AddNewLable(self,strName,dialog,struuid=None):#默认添加的是QWidget
         if isinstance(dialog, QWidget):
             tab = QWidget()#定义一个标签
             tab_layout = QVBoxLayout()#定义一个竖直的布局
@@ -55,6 +67,7 @@ class ECSTabWidget(QTabWidget):
             tab_layout.addWidget(tab_label)#竖向布局添加对应的对话框
             tab.setLayout(tab_layout)#变迁添加对应的布局
             index=self.addTab(tab, strName)#将标签添加到
+            self.m_dialog_uuid_map[struuid]=dialog#存储uuid和对应的对话框实例
             if index:
                 return index
     # endregion 添加新的标签页
