@@ -12,7 +12,7 @@ class ECSTabWidget(QTabWidget):
         self.m_Name="标签页管理对话框"
         self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例,都放到内存里面
         self.init_ui()
-
+    #根据uuid获取内存中的对话框
     def get_dialog_by_uuid(self, uuid):
         """
         根据提供的UUID，从字典中找到并返回对应的对话框实例。
