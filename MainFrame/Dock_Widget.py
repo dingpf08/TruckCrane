@@ -8,13 +8,13 @@ class CalculateDockWidget(QDockWidget):
 
     def init_ui(self):
         self.dock_widget_contents = QListWidget()
-        self.dock_widget_contents.addItems(['条目1', '条目2', '条目3'])
         self.setWidget(self.dock_widget_contents)
         self.setFeatures(QDockWidget.NoDockWidgetFeatures)
         # 连接双击信号到槽函数
         self.dock_widget_contents.itemDoubleClicked.connect(self.on_item_double_clicked)
 
     def on_item_double_clicked(self, item):
+
         # 获取关联的UUID
         struuid = item.data(Qt.UserRole)
         mainframe=self.parent()#获取父窗口
@@ -25,7 +25,7 @@ class CalculateDockWidget(QDockWidget):
             if dialogname:
                 index = Table_bar.AddNewLable(dialogname, dialog, struuid)  # 给上面添加标签页
                 Table_bar.setCurrentIndex(index)  # 显示当前的标签页
-
+        # 双击的时候如果已经附件了对话框 就不要重复添加了
 
         #通过标签页对话框获取uuid对应的对话框 然后将对话框附加到标签页 self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例的字典
 
