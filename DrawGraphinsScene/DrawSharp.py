@@ -1,6 +1,7 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsTextItem
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsTextItem, \
+    QGraphicsLineItem
+from PyQt5.QtCore import Qt, QPointF, QPoint
 from PyQt5.QtGui import QColor, QPen, QPainter, QFont
 
 
@@ -29,12 +30,20 @@ class DrawingWidget(QGraphicsView):
         #self.drawText()
         self.drawFirstShape(self.scene)
         self.drawSecondShape(self.scene)
+
+        x = 100
+        y=-102
+        dh=20
+        dm=2#箭头
+        l=100#箭头的跨度
+        space=5#相邻两个箭头的间距
+        while x <= 150:
+            self.paintArrow(x,y,dh,dm,l,space, self.scene)
+            x += 5
+
         self.last_pos = QPointF()
         self.panning = False
 
-    def drawSquare(self,pen):
-        self.scene.clear()
-        self.square = self.scene.addRect(50, 50, 200, 200, pen=pen, brush=QColor(0, 0, 0))
     #绘制边坡的轮廓线
     def drawFirstShape(self,scene):
         # 绘制第一个图形
@@ -69,7 +78,28 @@ class DrawingWidget(QGraphicsView):
         # 设置文本颜色为绿色
         text_item.setDefaultTextColor(QColor(0, 255, 0))
         scene.addItem(text_item)
-        #绘制文本：雄关漫道真如铁
+
+
+    def paintArrow(self,dx,dy,dh,dm,l,space,scene):
+        # 箭头参数
+        x=dx#起点x坐标
+        y =dy#起点y坐标
+        h=dh#箭头长度
+        m=dm#箭头标志偏离箭头点的长度
+
+        # 绘制第二个图形
+        pen = QPen(Qt.yellow, 0.3)  # 黄色线段 0.3为
+        # 定义三条线段
+        lines = [((x, y-h), (x, y)),
+                 ((x-m, y-m), (x, y)),
+                 ((x+m, y-m), (x, y)),
+                 ]
+        # 绘制线段
+        for line in lines:
+            start_point, end_point = line
+            scene.addLine(start_point[0], start_point[1], end_point[0], end_point[1], pen)
+
+
     def drawText(self):
         # 设置文字的颜色和字体
         textFont = QFont("宋体", 12)
