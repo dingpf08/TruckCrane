@@ -2,8 +2,8 @@ import sys
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
-from DrawGraphinsScene.DrawSharp import DrawingWidget as DrawArea  # 绘图区域
-
+#from DrawGraphinsScene.DrawSharp import DrawingWidget as DrawArea  # 自己绘制绘图区域
+from DrawGraphinsScene.DrawSharpPic import DrawingWidget as DrawArea  # 自己绘制绘图区域
 class EarthSlopeDialog(QDialog):
     def __init__(self):
         super().__init__()
