@@ -10,7 +10,9 @@ class ECSTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super(ECSTabWidget, self).__init__(parent)
         self.m_Name="标签页管理对话框"
-        self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例,都放到内存里面
+        self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例,都放到内存里面，从项目树移除的时候，也从数据结构里面移除
+        # 定义一个空列表来存储uuid字符串
+        self.uuid_set = set()#标签页上的对话框对应的uuid,不可以放入重复的元素，从标签页移除的时候，也从数据结构移除
         self.init_ui()
     #根据uuid获取内存中的对话框
     def get_dialog_by_uuid(self, uuid):
@@ -27,7 +29,9 @@ class ECSTabWidget(QTabWidget):
     #region 初始化函数
     def init_ui(self):
         # 标签1
-        self.AddNewLable("模块选择", EFSP(self))#添加第一个标签页
+        efsp=EFSP(self)#模块选择
+        struuid=str(efsp.uuid)#模块的uuid
+        self.AddNewLable("模块选择",efsp,struuid )#添加第一个标签页
         #self.setStyleSheet("background-color: lightblue;")#标签页的背景颜色
     # endregion 初始化函数
 
@@ -45,36 +49,63 @@ class ECSTabWidget(QTabWidget):
         menu = QMenu()
         close_action = menu.addAction("关闭")
         close_otheraction=menu.addAction("关闭其它")
-
+        tab_uuid =self.widget(index).property("uuid")
         if index==0:#模块选择,不能关闭模块选择
             close_action.setEnabled(False)
 
         action = menu.exec_(position)
-
         if action == close_action:
-            self.removeTab(index)
+            self.removeTabByIndexAnduuid(index,tab_uuid)
+
         elif action==close_otheraction:
             self.remove_other_tabs()
     #endregion 弹出右键菜单
-
+    #移除table节点和节点与uuid的对应关系
+    def removeTabByIndexAnduuid(self,index,tab_uuid):
+        self.uuid_set.discard(tab_uuid)#移除标签页中显示的uuid
+        self.removeTab(index)
+    #根据uuid找到对应的索引
+    def findTabIndexByUuid(self, struuid):
+        for index in range(self.count()):
+            tab = self.widget(index)
+            if tab.property("uuid") == struuid:
+                return index
+        return -1  # 如果没有找到匹配的uuid，返回-1表示不存在
     # region 添加新的标签页
         #strName为标签的名字，dialog为QWidget对话框
     def AddNewLable(self,strName,dialog,struuid=None):#默认添加的是QWidget
+        #移除标签页中的对话框，从self.uuid_list中移除对应的uuid
+        #双击左侧项目树的节点：获取uuid，如果self.uuid_list中有对应的uuid，找到uuid对应的标签索引，显示这个索引
+        #如果如果self.uuid_list没有对应的uuid，添加对应的标签页和对话框，对话框从self.m_dialog_uuid_map.get(struuid)获取
         if isinstance(dialog, QWidget):
-            tab = QWidget()#定义一个标签
-            tab_layout = QVBoxLayout()#定义一个竖直的布局
-            tab_label = dialog#定义附件的控件或者对话框的类型
-            tab_layout.addWidget(tab_label)#竖向布局添加对应的对话框
-            tab.setLayout(tab_layout)#变迁添加对应的布局
-            index=self.addTab(tab, strName)#将标签添加到
-            self.m_dialog_uuid_map[struuid]=dialog#存储uuid和对应的对话框实例
-            if index:
-                return index
+            if struuid in self.uuid_set:#显示的对话框中有这个元素
+                # 根据uuid查找对应的对话框
+                dialog = self.m_dialog_uuid_map.get(struuid)
+                if dialog is not None:
+                    index=self.findTabIndexByUuid(struuid)
+                    if index is not -1:
+                        self.setCurrentIndex(index)  # 显示当前的标签页
+                else:
+                    return
+                #让tab页面切换到对应的对话框
+            else:#显示的页面没有这个对话框
+                tab = QWidget()#定义一个标签
+                tab.setProperty("uuid", struuid)#给标签设置uuid属性
+                tab_layout = QVBoxLayout()#定义一个竖直的布局
+                tab_label = dialog#定义附件的控件或者对话框的类型
+                tab_layout.addWidget(tab_label)#竖向布局添加对应的对话框
+                tab.setLayout(tab_layout)#变迁添加对应的布局
+                index=self.addTab(tab, strName)#将标签添加到
+                self.uuid_set.add(struuid)#给标签页添加对应的str_uuid
+                self.m_dialog_uuid_map[struuid] = dialog  # 存储uuid和对应的对话框实例
+                if index:
+                    self.setCurrentIndex(index)  # 显示当前的标签页
     # endregion 添加新的标签页
 
     # region 根据索引移除标签页
     #移除特定标签页，根据索引来移除，index是要移除的标签的索引。标签页的索引从开始计数。
     def removeTabByIndex(self, index):
+
         self.removeTab(index)
     # endregion
 

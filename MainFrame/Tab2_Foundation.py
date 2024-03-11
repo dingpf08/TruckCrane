@@ -58,7 +58,7 @@ class Foundation_CalculateTreeDialog(QDialog):
 
                 index=parent.AddNewLable(itemtext,es,struuid)#给上面添加标签页
                 print(f"标签页的id为：{index}")
-                parent.setCurrentIndex(index)#显示当前的标签页
+                #parent.setCurrentIndex(index)#显示当前的标签页
                 grdparent=parent.parent()#MainFrame中的class MainWindow(QMainWindow):
                 if grdparent:#给右侧的项目树添加节点
                     grdparent.m_CalDock.add_item_by_name(itemtext,struuid)#对话框的uuid和左侧项目树节点共用同一个uuid

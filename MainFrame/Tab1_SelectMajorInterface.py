@@ -1,5 +1,7 @@
 import os
 import sys
+import uuid
+
 from PyQt5.QtWidgets import QApplication, QDialog, QGridLayout, QPushButton, QLabel, QWidget, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon, QPixmap, QBrush
 from PyQt5.QtCore import QSize, Qt
@@ -9,6 +11,7 @@ from Tab2_Foundation import Foundation_CalculateTreeDialog as FounCal
 class EngineerFuctionSelPage(QDialog):
     def __init__(self,parent=None):
         super(EngineerFuctionSelPage, self).__init__(parent)
+        self.uuid = uuid.uuid4()  # 生成一个唯一的UUID
         self.init_ui()
 
     def init_ui(self):
