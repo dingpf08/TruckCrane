@@ -117,13 +117,13 @@ class MultipleViewports(QMainWindow):
         # 加载每个 DrawingWidget 的不同图片
         # 假设您有 tab1.png, tab2.png 和 tab3.png
         self.tab1.loadImage('slope.png')
-        self.tab2.loadImage('slope1.png')
-        self.tab3.loadImage('slope2.png')
+        #self.tab2.loadImage('slope1.png')
+        #self.tab3.loadImage('slope2.png')
 
         # 将 DrawingWidget 添加到每个标签页
-        self.tabs.addTab(self.tab1, "正立面")
-        self.tabs.addTab(self.tab2, "侧立面")
-        self.tabs.addTab(self.tab3, "纵横向水平杆布置")
+        self.tabs.addTab(self.tab1, "示意图")
+        #self.tabs.addTab(self.tab2, "侧立面")
+        #self.tabs.addTab(self.tab3, "纵横向水平杆布置")
 
         # 设置 QTabWidget 为中心部件
         self.setCentralWidget(self.tabs)
@@ -138,7 +138,11 @@ class MultipleViewports(QMainWindow):
             pixmapItem = QGraphicsPixmapItem(pixmap)
             self.scene.addItem(pixmapItem)
             self.fitInView(pixmapItem, Qt.KeepAspectRatio)
-
+    def ChangeLoadImage(self,radioname):
+        if radioname=="土方直立壁开挖深度计算":
+            self.tab1.loadImage('slope.png')
+        elif radioname=="基坑安全边坡计算":
+            self.tab1.loadImage('slope_2.png')
 # 下面是创建和运行应用程序的标准方法
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -20,8 +20,8 @@ class EarthSlopeDialog(QDialog):
         main_splitter = QSplitter(Qt.Horizontal)  # 创建一个水平分割器
 
         # 左边部件
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
+        self.left_widget = QWidget()
+        left_layout = QVBoxLayout(self.left_widget)
 
         # 演算项目选择区域
         calculation_group = QGroupBox("验算项目选择")
@@ -30,6 +30,8 @@ class EarthSlopeDialog(QDialog):
         radio2 = QRadioButton("基坑安全边坡计算")
         calculation_layout.addWidget(radio1)
         calculation_layout.addWidget(radio2)
+        radio1.clicked.connect(self.on_radio_clicked)
+        radio2.clicked.connect(self.on_radio_clicked)
         calculation_group.setLayout(calculation_layout)
 
         # 坡顶作用荷载区域
@@ -63,11 +65,11 @@ class EarthSlopeDialog(QDialog):
         left_layout.addWidget(parameter_group)
 
         # 右边绘图区
-        right_layout = DrawArea()
+        self.right_layout = DrawArea()
 
         # 将左边和右边的部件添加到分割器
-        main_splitter.addWidget(left_widget)
-        main_splitter.addWidget(right_layout)
+        main_splitter.addWidget(self.left_widget)
+        main_splitter.addWidget(self.right_layout)
 
         # 创建一个主布局并添加分割器
         main_layout = QVBoxLayout()
@@ -75,8 +77,22 @@ class EarthSlopeDialog(QDialog):
 
         # 设置对话框的主布局
         self.setLayout(main_layout)
+        #返回对话框的uuid
     def Getuuid(self):
         return self.uuid
+
+    def on_radio_clicked(self):
+        radio_button = self.sender()
+        if radio_button.isChecked():
+            radio_text=radio_button.text()
+            if radio_text == "土方直立壁开挖深度计算":
+                print("选择了土方直立壁开挖深度计算")
+                # 这里可以添加更多针对此选项的代码
+            elif radio_text == "基坑安全边坡计算":
+                print("选择了基坑安全边坡计算")
+                # 这里可以添加更多针对此选项的代码
+            self.right_layout.ChangeLoadImage(radio_text)
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     earth_slope_dialog = EarthSlopeDialog()
