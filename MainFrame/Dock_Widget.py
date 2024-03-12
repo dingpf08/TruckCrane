@@ -21,6 +21,7 @@ class CalculateDockWidget(QDockWidget):
             Table_bar=mainframe.m_ECST#获取Table_Bar
             dialog=Table_bar.get_dialog_by_uuid(struuid)#根据uuid获取对话框
             dialogname=dialog.m_name
+            print(f"双击的对话框名字为：{dialogname}")
             if dialogname:
                 index = Table_bar.AddNewLable(dialogname, dialog, struuid)  # 给上面添加标签页
 

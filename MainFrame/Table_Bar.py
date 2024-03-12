@@ -16,6 +16,22 @@ class ECSTabWidget(QTabWidget):
         # 定义一个空列表来存储uuid字符串
         self.uuid_set = set()#标签页上的对话框对应的uuid,不可以放入重复的元素，从标签页移除的时候，也从数据结构移除
         self.init_ui()
+
+    def setCurrentIndex(self, index):
+        super(ECSTabWidget, self).setCurrentIndex(index)
+        # 更新所有标签的样式
+        self.updateTabStyles()
+
+    def updateTabStyles(self):
+        for i in range(self.count()):
+            if i == self.currentIndex():
+                # 将当前选中的标签颜色设置为浅蓝色
+                self.tabBar().setTabTextColor(i, Qt.blue)  # 设置文字颜色为蓝色
+                self.tabBar().setStyleSheet(f"QTabBar::tab:selected {{background-color: lightblue;}}")  # 设置选中的标签背景色为浅蓝色
+            else:
+                # 其他标签使用默认颜色
+                self.tabBar().setTabTextColor(i, Qt.black)  # 设置未选中的标签文字颜色为黑色
+                # 如果需要，也可以为未选中的标签设置特定的背景色
     #根据uuid获取内存中的对话框
     def get_dialog_by_uuid(self, uuid):
         """
@@ -64,8 +80,7 @@ class ECSTabWidget(QTabWidget):
     #endregion 弹出右键菜单
     #移除table节点和节点与uuid的对应关系
     def removeTabByIndexAnduuid(self,index,tab_uuid):
-        self.uuid_set.discard(tab_uuid)#移除标签页中显示的uuid
-        self.removeTab(index)
+        print("移除tab页面")
         # 使用这个UUID作为键来从字典中获取对应的对话框对象
         dialog = self.m_dialog_uuid_map.get(tab_uuid, None)
         # 检查是否找到了对话框
@@ -85,17 +100,25 @@ class ECSTabWidget(QTabWidget):
                     # 判断用户点击了哪个按钮，并进行相应处理
                     if retval == QMessageBox.Yes:
                         # 保存对话框的当前数据，更新数据库
-
+                        self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
+                        self.removeTab(index)
                         dialog.IsSave=True
+                        #更新数据库的数据
                         print("用户选择了‘是’")
 
                     elif retval == QMessageBox.No:
+                        self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
+                        self.removeTab(index)
                         #不保存对话框的当前数据，不更新数据库
                         dialog.IsSave = True
+                        #不更新数据库的数据
                         print("用户选择了‘否’")
                     elif retval == QMessageBox.Cancel:
                         #返回对话框
                         print("用户选择了‘取消’")
+                elif issave :#保存了
+                    self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
+                    self.removeTab(index)
             # 对话框被找到，可以进行进一步的操作
     #根据uuid找到对应的索引
     def findTabIndexByUuid(self, struuid):
@@ -105,7 +128,7 @@ class ECSTabWidget(QTabWidget):
                 return index
         return -1  # 如果没有找到匹配的uuid，返回-1表示不存在
     # region 添加新的标签页
-        #strName为标签的名字，dialog为QWidget对话框
+        #strName为标签的名字，dialog为QWidget对话框，如何对话框存在，则切换对话框，如果对话框不存在，则新添一个对话框
     def AddNewLable(self,strName,dialog,struuid=None):#默认添加的是QWidget
         #移除标签页中的对话框，从self.uuid_list中移除对应的uuid
         #双击左侧项目树的节点：获取uuid，如果self.uuid_list中有对应的uuid，找到uuid对应的标签索引，显示这个索引

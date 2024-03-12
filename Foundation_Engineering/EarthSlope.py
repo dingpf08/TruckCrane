@@ -37,6 +37,7 @@ class EarthSlopeDialog(QDialog):
         calculation_group = QGroupBox("验算项目选择")
         calculation_layout = QVBoxLayout()
         self.radio1 = QRadioButton("土方直立壁开挖深度计算")
+        self.radio1.setChecked(True)#默认第一个按钮被选中
         self.radio2 = QRadioButton("基坑安全边坡计算")
         # 对于QRadioButton，你需要为每一个按钮的toggled信号连接到markUnsavedChanges方法
         self.radio1.toggled.connect(self.markUnsavedChanges)
