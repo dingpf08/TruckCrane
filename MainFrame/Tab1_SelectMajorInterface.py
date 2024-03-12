@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QBrush
 from PyQt5.QtCore import QSize, Qt
 #自定义对话框
 from Tab2_Foundation import Foundation_CalculateTreeDialog as FounCal
-#首页：“模块选择”对应的标签页对话框
+#首页：“模块选择”对应的标签页对话框，对话框的背景为一张纯色的图片
 class EngineerFuctionSelPage(QDialog):
     def __init__(self,parent=None):
         super(EngineerFuctionSelPage, self).__init__(parent)
@@ -22,7 +22,7 @@ class EngineerFuctionSelPage(QDialog):
         grid_layout.setSpacing(0)  # 设置网格内控件之间的间距为0
         # 设置背景图片：#目录修改#
         # 加载图片
-        pixmap = QPixmap("Pic/background.png")
+        pixmap = QPixmap("Pic/background.png")#
         # 创建背景画刷
         brush = QBrush(pixmap)
         # 设置背景
