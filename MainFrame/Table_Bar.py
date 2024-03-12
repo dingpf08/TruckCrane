@@ -1,8 +1,10 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication
+from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication, \
+    QMessageBox
 from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QMouseEvent
 #父窗口是class MainWindow(QMainWindow)
+from Foundation_Engineering.EarthSlope import EarthSlopeDialog#边坡计算对话框
 from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
 #标签页，管理各种对话框
 #这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
@@ -54,16 +56,47 @@ class ECSTabWidget(QTabWidget):
             close_action.setEnabled(False)
 
         action = menu.exec_(position)
-        if action == close_action:
+        if action == close_action:#关闭标签页
             self.removeTabByIndexAnduuid(index,tab_uuid)
 
-        elif action==close_otheraction:
+        elif action==close_otheraction:#
             self.remove_other_tabs()
     #endregion 弹出右键菜单
     #移除table节点和节点与uuid的对应关系
     def removeTabByIndexAnduuid(self,index,tab_uuid):
         self.uuid_set.discard(tab_uuid)#移除标签页中显示的uuid
         self.removeTab(index)
+        # 使用这个UUID作为键来从字典中获取对应的对话框对象
+        dialog = self.m_dialog_uuid_map.get(tab_uuid, None)
+        # 检查是否找到了对话框
+        if dialog is not None:#对话框存在
+            if isinstance(dialog, EarthSlopeDialog):
+                issave=dialog.IsSave#是否保存
+                if not issave:
+                    # 创建一个消息框
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle("操作提示")  # 设置窗口标题
+                    msgBox.setIcon(QMessageBox.Information)  # 设置对话框图标为信息图标
+                    msgBox.setText("保存当前所有更改的设置吗？")  # 设置对话框的提示文本
+                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)  # 设置按钮
+                    msgBox.setDefaultButton(QMessageBox.Yes)  # 设置默认按钮为"是"
+                    # 显示消息框并等待用户响应
+                    retval = msgBox.exec_()
+                    # 判断用户点击了哪个按钮，并进行相应处理
+                    if retval == QMessageBox.Yes:
+                        # 保存对话框的当前数据，更新数据库
+
+                        dialog.IsSave=True
+                        print("用户选择了‘是’")
+
+                    elif retval == QMessageBox.No:
+                        #不保存对话框的当前数据，不更新数据库
+                        dialog.IsSave = True
+                        print("用户选择了‘否’")
+                    elif retval == QMessageBox.Cancel:
+                        #返回对话框
+                        print("用户选择了‘取消’")
+            # 对话框被找到，可以进行进一步的操作
     #根据uuid找到对应的索引
     def findTabIndexByUuid(self, struuid):
         for index in range(self.count()):
