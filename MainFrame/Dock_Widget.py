@@ -4,6 +4,8 @@ from PyQt5.QtCore import Qt
 class CalculateDockWidget(QDockWidget):
     def __init__(self, title, parent=None):
         super(CalculateDockWidget, self).__init__(title, parent)
+        self.m_dialog_data_map = {}  # 新增：存储每个对话框的数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择，
+        # 这个数据在反序列化的时候，会给到CalculateDockWidget的self.m_dialog_data_map = {}  # 新增：存储每个对话框的数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择
         self.init_ui()
 
     def init_ui(self):
@@ -20,8 +22,10 @@ class CalculateDockWidget(QDockWidget):
         if mainframe:
             Table_bar=mainframe.m_ECST#获取Table_Bar
             dialog=Table_bar.get_dialog_by_uuid(struuid)#根据uuid获取对话框
-            dialogname=dialog.m_name
-            print(f"双击的对话框名字为：{dialogname}")
+            dialogname=None
+            if dialog:
+                dialogname=dialog.m_name
+                print(f"双击的对话框名字为：{dialogname}")
             if dialogname:
                 index = Table_bar.AddNewLable(dialogname, dialog, struuid)  # 给上面添加标签页
 
@@ -37,6 +41,14 @@ class CalculateDockWidget(QDockWidget):
         item.setData(Qt.UserRole, struuid)
         self.dock_widget_contents.addItem(item)
 
+    def refresh_project_tree(self):
+        """使用self.m_dialog_data_map中的数据刷新项目树。"""
+        self.dock_widget_contents.clear()  # 首先清空当前的项目树列表
+
+        for struuid, dialog_data in self.m_dialog_data_map.items():
+            # 假设dialog_data字典中有一个"name"键，我们用它来作为项目树中显示的名称
+            item_name =dialog_data.caltypename
+            self.add_item_by_name(item_name, struuid)
 def main():
     import sys
     app = QApplication(sys.argv)

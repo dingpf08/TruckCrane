@@ -1,3 +1,5 @@
+from DataStruDef.CalculateType import ConstructionCalculationType as ConCalType#计算类型
+#from CalculateType import ConstructionCalculationType as ConCalType#计算类型  这样子不对 不太理解
 class VerificationProject:
     """
     验算项目选择类，用于存储用户选择的验算项目类型。
@@ -5,8 +7,6 @@ class VerificationProject:
     def __init__(self, project_type: str):
         # 验算项目类型，例如："土方直立壁开挖深度计算" 或 "基坑安全边坡计算"
         self.project_type = project_type
-
-
 class SlopeTopLoad:
     """
     坡顶作用荷载类，用于存储坡顶荷载相关参数。
@@ -14,7 +14,6 @@ class SlopeTopLoad:
     def __init__(self, uniform_load: float):
         # 坑顶护道上均布荷载 q(kN/m²)
         self.uniform_load = uniform_load
-
 class BasicParameters:
     """
     基本参数类，用于存储边坡计算所需的基本土体物理参数。
@@ -27,15 +26,18 @@ class BasicParameters:
         # 土的内摩擦角ϕ(°)
         self.internal_friction_angle = internal_friction_angle#double
         # 土粘聚力c(kN/㎡)
-        self.cohesion = cohesion
+        self.cohesion = cohesion#double
         # 边坡的坡度角θ(°)
-        self.slope_angle = slope_angle
-#土方边坡计算的数据类型
+        self.slope_angle = slope_angle#double
+#土方边坡计算的数据类型：新建一个数据类型，要把数据类型默认的名称和类型加到类的初始化函数中
+#Note：对于其它数据类型 都要有下面两个变量：self.caltypename（对话框的名字str），self.conCalType（对话框的类型ConCalType）
 class SlopeCalculationData:
     """
     土方边坡计算数据类型，整合验算项目选择、坡顶作用荷载、基本土体物理参数。
     """
-    def __init__(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters):
+    def __init__(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters,caltypename="土方边坡计算"):
+        self.caltypename=caltypename#计算类型文字版
+        self.conCalType=ConCalType.SOIL_EMBANKMENT_CALCULATION#土方边坡计算
         # 验算项目
         self.verification_project = verification_project
         # 坡顶作用荷载
@@ -43,15 +45,24 @@ class SlopeCalculationData:
         # 基本土体物理参数
         self.basic_parameters = basic_parameters
 
-# 使用示例
-# 创建验算项目实例
-verification_project = VerificationProject("基坑安全边坡计算")
-# 创建坡顶作用荷载实例
-slope_top_load = SlopeTopLoad(20.0) # 假设均布荷载为20kN/m²
-# 创建基本参数实例
-basic_parameters = BasicParameters("粘性土", 18.5, 30, 10, 45)
+    # 更新参数
+    def update(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad,
+               basic_parameters: BasicParameters):
+        """根据提供的新实例更新计算数据的状态。"""
+        self.verification_project = verification_project
+        self.slope_top_load = slope_top_load
+        self.basic_parameters = basic_parameters
+        return self  # 返回实例自身
+def main():
+    # 使用示例
+    # 创建验算项目实例
+    verification_project = VerificationProject("基坑安全边坡计算")
+    # 创建坡顶作用荷载实例
+    slope_top_load = SlopeTopLoad(20.0) # 假设均布荷载为20kN/m²
+    # 创建基本参数实例
+    basic_parameters = BasicParameters("粘性土", 18.5, 30, 10, 45)
 
-# 创建土方边坡计算数据实例
-slope_calculation_data = SlopeCalculationData(verification_project, slope_top_load, basic_parameters)
+    # 创建土方边坡计算数据实例
+    slope_calculation_data = SlopeCalculationData(verification_project, slope_top_load, basic_parameters)
 
-# 你现在可以通过slope_calculation_data访问所有相关参数和数据
+    # 你现在可以通过slope_calculation_data访问所有相关参数和数据

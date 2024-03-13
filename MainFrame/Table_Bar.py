@@ -1,3 +1,5 @@
+import pickle
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication, \
     QMessageBox
@@ -6,21 +8,42 @@ from PyQt5.QtGui import QMouseEvent
 #父窗口是class MainWindow(QMainWindow)
 from Foundation_Engineering.EarthSlope import EarthSlopeDialog#边坡计算对话框
 from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
+from DataStruDef.CalculateType import ConstructionCalculationType as Conct#对话框类型
+#序列化文件的后缀为ZtzpCCS
 #标签页，管理各种对话框
 #这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
 class ECSTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super(ECSTabWidget, self).__init__(parent)
         self.m_Name="标签页管理对话框"
-        self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例,都放到内存里面，从项目树移除的时候，也从数据结构里面移除
-        # 定义一个空列表来存储uuid字符串
+        self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框对象实例,都放到内存里面，从项目树移除的时候，也从数据结构里面移除
         self.uuid_set = set()#标签页上的对话框对应的uuid,不可以放入重复的元素，从标签页移除的时候，也从数据结构移除
+        self.m_dialog_data_map = {}  # 新增：存储每个对话框的uuid和对应的对话框数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择
         self.init_ui()
+
+    def serialize_dialog_data_map(self, file_name):
+        """将对话框数据字典序列化到指定的文件中。"""
+        try:
+            # 序列化数据到指定的文件
+            with open(file_name, 'wb') as file:
+                pickle.dump(self.m_dialog_data_map, file)
+            print(f"数据已成功保存到{file_name}")
+        except Exception as e:
+            print(f"保存数据时发生错误: {e}")
 
     def setCurrentIndex(self, index):
         super(ECSTabWidget, self).setCurrentIndex(index)
         # 更新所有标签的样式
         self.updateTabStyles()
+
+    def UpdataDialogData(self, prodata):
+        self.m_dialog_data_map = prodata  # 标签页对话框的数据更新
+        #更新uuid和对应的对话框实体
+        for uuid, dialog_data in self.m_dialog_data_map.items():
+            if dialog_data.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:#土方边坡计算
+                dialog_instance = EarthSlopeDialog(uuid,dialog_data)
+                self.m_dialog_uuid_map[uuid] = dialog_instance
+
 
     def updateTabStyles(self):
         for i in range(self.count()):
@@ -79,6 +102,31 @@ class ECSTabWidget(QTabWidget):
             self.remove_other_tabs()
     #endregion 弹出右键菜单
     #移除table节点和节点与uuid的对应关系
+    #弹出提示框
+    def ShowMessageBox(self,title,text,buttons, default_button):
+        """
+            显示一个自定义的消息框。
+            参数:
+            title -- 对话框的标题。
+            text -- 对话框显示的文本。
+            buttons -- 要在对话框中显示的按钮（QMessageBox标准按钮）。
+            default_button -- 对话框的默认按钮（QMessageBox标准按钮）。
+
+            返回:
+            用户点击的按钮。
+            """
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle(title)  # 设置窗口标题
+        msgBox.setIcon(QMessageBox.Information)  # 设置对话框图标为信息图标
+        msgBox.setText(text)  # 设置对话框的提示文本
+        msgBox.setStandardButtons(buttons)  # 设置按钮
+        msgBox.setDefaultButton(default_button)  # 设置默认按钮
+
+        # 显示消息框并等待用户响应
+        retval = msgBox.exec_()
+
+        # 返回用户点击的按钮
+        return retval
     def removeTabByIndexAnduuid(self,index,tab_uuid):
         print("移除tab页面")
         # 使用这个UUID作为键来从字典中获取对应的对话框对象
@@ -87,25 +135,22 @@ class ECSTabWidget(QTabWidget):
         if dialog is not None:#对话框存在
             if isinstance(dialog, EarthSlopeDialog):
                 issave=dialog.IsSave#是否保存
-                if not issave:
-                    # 创建一个消息框
-                    msgBox = QMessageBox()
-                    msgBox.setWindowTitle("操作提示")  # 设置窗口标题
-                    msgBox.setIcon(QMessageBox.Information)  # 设置对话框图标为信息图标
-                    msgBox.setText("保存当前所有更改的设置吗？")  # 设置对话框的提示文本
-                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)  # 设置按钮
-                    msgBox.setDefaultButton(QMessageBox.Yes)  # 设置默认按钮为"是"
-                    # 显示消息框并等待用户响应
-                    retval = msgBox.exec_()
+                if not issave:#对话框数据没有保存，提示是否保存
+                    retval =self.ShowMessageBox("操作提示","保存当前所有更改的设置吗？",
+                                                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,QMessageBox.Yes)
                     # 判断用户点击了哪个按钮，并进行相应处理
                     if retval == QMessageBox.Yes:
                         # 保存对话框的当前数据，更新数据库
+                        #1、获取对话框的数据
+                        slopedata=dialog.updateCalculationData()#获取对话框的数据
+                        #2、将uuid和对话框的数据存储到self.m_dialog_data_map = {}
+                        self.m_dialog_data_map[tab_uuid] = slopedata#如果没有就添加，如果存在旧的 则用新的覆盖
                         self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
-                        self.removeTab(index)
-                        dialog.IsSave=True
+                        self.removeTab(index)#移除标签页
+                        dialog.IsSave=True#对话框是否已经保存为True
                         #更新数据库的数据
                         print("用户选择了‘是’")
-
+                        #重新序列化话数据
                     elif retval == QMessageBox.No:
                         self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
                         self.removeTab(index)
@@ -164,7 +209,7 @@ class ECSTabWidget(QTabWidget):
 
         self.removeTab(index)
     # endregion
-
+    #移除其它的标签页
     def remove_other_tabs(self):
         count = self.count()
         for i in range(count - 1, -1, -1):
