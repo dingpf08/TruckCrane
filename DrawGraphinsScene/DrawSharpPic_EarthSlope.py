@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsS
     QTextEdit, QPushButton, QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
-
+#视口区域
 class DrawingWidget(QGraphicsView):
     def __init__(self):
         super().__init__()
@@ -12,9 +12,10 @@ class DrawingWidget(QGraphicsView):
 
     def initUI(self):
         self.scene = QGraphicsScene()
+        self.scene.setSceneRect(-1000000, -1000000, 2000000, 2000000)  # 根据需要调整
         self.setScene(self.scene)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 关闭水平滚动条
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 关闭垂直滚动条
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # 关闭水平滚动条
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # 关闭垂直滚动条
         self.setRenderHint(QPainter.Antialiasing)
         self.scene.setBackgroundBrush(QColor(0, 0, 0))
         self.loadAndFitImage()
@@ -71,11 +72,24 @@ class DrawingWidget(QGraphicsView):
             self.panning = False
 
     def mouseMoveEvent(self, event):
-        if self.panning:
-            current_pos = event.pos()
-            delta = self.mapToScene(current_pos) - self.mapToScene(self.last_pos)
-            self.last_pos = current_pos
-            self.translate(delta.x(), delta.y())
+        try:
+            if self.panning and self.last_pos:  # 确保已经开始拖动并记录了最后的位置
+                current_pos = event.pos()
+                # 计算从上次位置到当前位置的位移
+                delta = self.mapToScene(current_pos) - self.mapToScene(self.last_pos)
+                self.last_pos = current_pos
+
+                # 获取当前的滚动条位置并调整
+                hbar = self.horizontalScrollBar()
+                vbar = self.verticalScrollBar()
+                # 将浮点数位移值转换为整数
+                hbar.setValue(int(hbar.value() - delta.x()))
+                vbar.setValue(int(vbar.value() - delta.y()))
+        except Exception as e:
+            print(f"Error during mouseMoveEvent: {e}")
+
+        super().mouseMoveEvent(event)  # 调用父类处理，确保其他事件也能得到处理
+
 
 class MultipleViewports(QMainWindow):
     def __init__(self):
