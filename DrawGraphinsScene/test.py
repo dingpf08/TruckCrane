@@ -121,7 +121,7 @@ class MultipleViewports(QMainWindow):
 
     def buttonClicked(self, buttonText):
         self.textEdit.clear()
-        self.textEdit.append(f"{buttonText} 被点击了")
+        self.textEdit.append(f"计算完成，请输出计算报告")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

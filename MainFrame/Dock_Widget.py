@@ -41,6 +41,7 @@ class CalculateDockWidget(QDockWidget):
         self.buttons[2].clicked.connect(self.onCalculationDisclosureClicked)#计算交底
 
     def onDesignCalculationClicked(self, item):  # 设计计算
+
         print("设计计算")
     def onConstructionSchemeClicked(self, item):  # 施工方案
         print("施工方案")
