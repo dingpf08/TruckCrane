@@ -5,7 +5,7 @@ import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QDialog, QTreeWidget, QTreeWidgetItem, QVBoxLayout
-from Foundation_Engineering.EarthSlope import EarthSlopeDialog as ES    #边坡界面
+from Foundation_Engineering.EarthSlopeDialog import EarthSlopeDialog as ES    #边坡界面
 from Dock_Widget import CalculateDockWidget as CD#左侧的项目树
 #基坑工程计算选择对话框
 class Foundation_CalculateTreeDialog(QDialog):

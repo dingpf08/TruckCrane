@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit,
 from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QMouseEvent
 #父窗口是class MainWindow(QMainWindow)
-from Foundation_Engineering.EarthSlope import EarthSlopeDialog#边坡计算对话框
+from Foundation_Engineering.EarthSlopeDialog import EarthSlopeDialog#边坡计算对话框
 from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
 from DataStruDef.CalculateType import ConstructionCalculationType as Conct#对话框类型
 #序列化文件的后缀为ZtzpCCS

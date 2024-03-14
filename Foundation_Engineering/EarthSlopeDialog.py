@@ -1,10 +1,11 @@
+#土方边坡计算对话框
 import sys
 import uuid
 import pickle
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
-from DrawGraphinsScene.DrawSharpPic import MultipleViewports as DrawArea  # 自己绘制绘图区域
+from DrawGraphinsScene.DrawSharpPic_EarthSlope import MultipleViewports as DrawArea  # 自己绘制绘图区域
 from DataStruDef.EarthSlopeCalculation import SlopeCalculationData as Scdata, VerificationProject, \
     SlopeTopLoad, BasicParameters, SlopeCalculationData  # 边坡计算数据
 from DataStruDef.CalculateType import ConstructionCalculationType as Caltype
