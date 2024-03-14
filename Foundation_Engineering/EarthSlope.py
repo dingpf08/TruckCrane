@@ -15,6 +15,11 @@ class EarthSlopeDialog(QDialog):
         self.m_name="土方边坡计算对话框"
 
         self.uuid =None#能够唯一定位对话框的符号
+        self.verification_project =None#工程名称
+        self.slope_top_load =None#均布荷载
+        self.basic_parameters=None#基本参数
+        self.slope_calculation_data=None#所有参数的集合
+        self.IsSave = True#
         if para_uuid==None:
             self.uuid =uuid.uuid4()  # 生成一个唯一的UUID
         else:
@@ -37,19 +42,17 @@ class EarthSlopeDialog(QDialog):
         """根据当前的对话框内容更新计算数据。"""
         # 更新验算项目类型
         if self.radio1.isChecked():
-            self.verification_project.project_type = "土方直立壁开挖深度计算"
+            self.slope_calculation_data.verification_project.project_type = "土方直立壁开挖深度计算"
         elif self.radio2.isChecked():
-            self.verification_project.project_type = "基坑安全边坡计算"
+            self.slope_calculation_data.verification_project.project_type = "基坑安全边坡计算"
         # 更新坡顶作用荷载
-        self.slope_top_load.uniform_load = float(self.load_input1.text())
+        self.slope_calculation_data.slope_top_load.uniform_load = float(self.load_input1.text())
         # 更新基本参数
-        self.basic_parameters.soil_type = self.soil_type_combobox.currentText()
-        self.basic_parameters.unit_weight = float(self.Basic_soilweight.text())
-        self.basic_parameters.internal_friction_angle = float(self.basic_InternalFrictionAngle.text())
-        self.basic_parameters.cohesion = float(self.basic_soilCohesion.text())
-        self.basic_parameters.slope_angle = float(self.basic_slopeAngle.text())
-        # 更新计算数据实例
-        self.slope_calculation_data=self.slope_calculation_data.update(self.verification_project, self.slope_top_load, self.basic_parameters)
+        self.slope_calculation_data.basic_parameters.soil_type = self.soil_type_combobox.currentText()
+        self.slope_calculation_data.basic_parameters.unit_weight = float(self.Basic_soilweight.text())
+        self.slope_calculation_data.basic_parameters.internal_friction_angle = float(self.basic_InternalFrictionAngle.text())
+        self.slope_calculation_data.basic_parameters.cohesion = float(self.basic_soilCohesion.text())
+        self.slope_calculation_data.basic_parameters.slope_angle = float(self.basic_slopeAngle.text())
         return self.slope_calculation_data
     def initUI(self):
         self.setWindowTitle('土方边坡计算')
