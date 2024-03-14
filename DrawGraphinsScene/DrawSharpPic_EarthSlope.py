@@ -14,8 +14,8 @@ class DrawingWidget(QGraphicsView):
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(-1000000, -1000000, 2000000, 2000000)  # 根据需要调整
         self.setScene(self.scene)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # 关闭水平滚动条
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # 关闭垂直滚动条
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 关闭水平滚动条
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # 关闭垂直滚动条
         self.setRenderHint(QPainter.Antialiasing)
         self.scene.setBackgroundBrush(QColor(0, 0, 0))
         self.loadAndFitImage()
