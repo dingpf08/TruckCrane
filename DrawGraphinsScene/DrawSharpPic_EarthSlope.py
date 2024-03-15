@@ -101,7 +101,11 @@ class MultipleViewports(QMainWindow):
             'textEdit': 15
         }
         self.initUI()
-
+    def ChangeLoadImage(self,radioname):
+        if radioname=="土方直立壁开挖深度计算":
+            self.tab1.loadImage('slope.png')
+        elif radioname=="基坑安全边坡计算":
+            self.tab1.loadImage('slope_2.png')
     def initUI(self):
         self.setWindowTitle('多标签图形界面')
         self.setGeometry(100, 100, 800, 600)
@@ -133,7 +137,7 @@ class MultipleViewports(QMainWindow):
 
         mainLayout.addWidget(self.buttonsWidget, self.layoutRatios['buttonsWidget'])  # 按钮区布局比例设置为1
 
-        self.textEdit = QTextEdit()
+        self.textEdit = QTextEdit()#输出框
         self.textEdit.setReadOnly(True)
 
         mainLayout.addWidget(self.textEdit, self.layoutRatios['textEdit'])  # 文字显示区布局比例设置为3
@@ -141,7 +145,23 @@ class MultipleViewports(QMainWindow):
         mainWidget.setLayout(mainLayout)
         self.setCentralWidget(mainWidget)
 
+    #快速计算
     def buttonClicked(self, buttonText):
+        #1、获取本次计算的参数，进行试算，给出试算结果，输出到self.textEdit
+        parent_dialog=self.parent();#QSplitter
+        # 检查是否真的有父窗口
+        if parent_dialog:#
+            print(parent_dialog.objectName())
+            grand_parent_dialog=parent_dialog.parent() # EarthSlopeDialog等子对话框
+            if grand_parent_dialog:
+                grand_grand_parent_dialog=grand_parent_dialog.parent()#QWidget
+                if grand_grand_parent_dialog:
+                    parents_3grand_parent_dialog=grand_grand_parent_dialog.parent()#stackedWidget
+                    if parents_3grand_parent_dialog:
+                        parents_4grand_parent_dialog=parents_3grand_parent_dialog.parent()#QWidget 标签管理页面class ECSTabWidget(QTabWidget)
+                        currentdata = parents_4grand_parent_dialog.GetCurrentDialogData()#获取到了当前选择的tab的数据
+                        print(f"{currentdata}")
+        #输出试算结果
         self.textEdit.clear()
         self.textEdit.append(f"{buttonText} 被点击了")
 

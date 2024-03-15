@@ -76,7 +76,9 @@ class EngineerFuctionSelPage(QDialog):
             print("没有找到父对话框")
         #初始化各种选择对话框
         self.m_Fcalsel = FounCal(parent)  # 基坑工程选择对话框的父类为标签页，标签页的父类为主对话框
-
+    #选择页面没有参数
+    def updateCalculationData(self):
+        return None
 
     def on_button_clicked(self,button):
         #获取按钮的文本

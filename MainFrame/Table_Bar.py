@@ -12,14 +12,68 @@ from DataStruDef.CalculateType import ConstructionCalculationType as Conct#对�
 #序列化文件的后缀为ZtzpCCS
 #标签页，管理各种对话框
 #这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
+#每个标签页都添加一个uuid，tab.setProperty("uuid", struuid)
 class ECSTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super(ECSTabWidget, self).__init__(parent)
         self.m_Name="标签页管理对话框"
         self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框对象实例,都放到内存里面，从项目树移除的时候，也从数据结构里面移除
         self.uuid_set = set()#标签页上的对话框对应的uuid,不可以放入重复的元素，从标签页移除的时候，也从数据结构移除
-        self.m_dialog_data_map = {}  # 新增：存储每个对话框的uuid和对应的对话框数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择
+        self.m_dialog_data_map = {}  # 新增：存储每个对话框的uuid和对应的对话框数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择保存的时候，将对话框数据存储到这个变量
+        self.m_index=None#当前的标签页
+        self.m_CurrentData=None#当前标签页对应的数据
+        # 连接标签页切换的信号到自定义的槽函数
+        self.currentChanged.connect(self.onTabChanged)#切换标签页
         self.init_ui()
+        #获取当前标签页的
+    def GetCurrentDialogData(self):
+        self.m_CurrentData=self.CurrentDialogData(self.m_index)
+        return self.m_CurrentData
+    #切换标签页
+    def CurrentDialogData(self,index):
+        # 处理标签页变化的逻辑
+        print(f"切换到了标签页: {index}")
+        # 获取当前激活的标签页的UUID
+        current_tab = self.widget(index)  # 获取当前选中的标签页对应的widget
+        if current_tab:  # 检查是否获取到了标签页
+            uuid = current_tab.property("uuid")  # 获取这个标签页对应的UUID
+            if uuid:  # 数据保存了，且存储在self.m_dialog_data_map
+                # 使用UUID从字典中获取对应的对话框数据
+                dialog_data = self.m_dialog_data_map.get(uuid)
+                if dialog_data:
+                    self.m_CurrentData = None  # 重置为空
+                    self.m_CurrentData = dialog_data  # 设置当前的数据内容
+                    print(f"切换到了标签页: {index}, UUID: {uuid}, 数据: {dialog_data}")
+                    # 这里可以添加你的逻辑来处理对话框数据，比如更新对话框的UI
+                else:  # 数据还没有存储，则
+                    dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
+                    if dialog_instance is None:
+                        print(f"找不到UUID为 {uuid} 的对话框实例。")
+                        return
+                    dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
+                    if dialog_data:
+                        print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
+                        return dialog_data
+            else:  # 数据还没有存储，没关系 从对话框钟直接获取
+                dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
+                if dialog_instance is None:
+                    print(f"找不到UUID为 {uuid} 的对话框实例。")
+                    return
+                # 假设对话框实例有一个方法getCurrentData()来获取当前数据
+                dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
+                if dialog_data is None:
+                    print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
+                    return
+                else:#获取到数据
+                    return dialog_data
+                    print(f"从对话框实例UUID为 {uuid} 成功获取数据。")
+
+                print(f"标签页 {index} 没有设置UUID。")
+        else:
+            print(f"没有找到标签页 {index} 对应的widget。")
+    def onTabChanged(self, index):
+        m_index=index#设置当前标签页
+        self.m_CurrentData=self.CurrentDialogData(index)
 
     def serialize_dialog_data_map(self, file_name):
         """将对话框数据字典序列化到指定的文件中。"""
@@ -185,6 +239,7 @@ class ECSTabWidget(QTabWidget):
                 if dialog is not None:
                     index=self.findTabIndexByUuid(struuid)
                     if index is not -1:
+                        self.m_index=index
                         self.setCurrentIndex(index)  # 显示当前的标签页
                 else:
                     return
@@ -200,6 +255,7 @@ class ECSTabWidget(QTabWidget):
                 self.uuid_set.add(struuid)#给标签页添加对应的str_uuid
                 self.m_dialog_uuid_map[struuid] = dialog  # 存储uuid和对应的对话框实例
                 if index:
+                    self.m_index=index
                     self.setCurrentIndex(index)  # 显示当前的标签页
     # endregion 添加新的标签页
 

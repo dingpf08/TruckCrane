@@ -148,7 +148,7 @@ class EarthSlopeDialog(QDialog):
         left_layout.addWidget(parameter_group)
 
         # 右边绘图区
-        self.right_layout = DrawArea()
+        self.right_layout = DrawArea()#土方边坡对话框
 
         # 将左边和右边的部件添加到分割器
         main_splitter.addWidget(self.left_widget)
