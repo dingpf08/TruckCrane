@@ -217,6 +217,10 @@ class ECSTabWidget(QTabWidget):
                         print("用户选择了‘取消’")
                 elif issave :#保存了
                     self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
+                    # 1、获取对话框的数据
+                    slopedata = dialog.updateCalculationData()  # 获取对话框的数据
+                    # 2、将uuid和对话框的数据存储到self.m_dialog_data_map = {}
+                    self.m_dialog_data_map[tab_uuid] = slopedata  # 如果没有就添加，如果存在旧的 则用新的覆盖
                     self.removeTab(index)
             # 对话框被找到，可以进行进一步的操作
     #根据uuid找到对应的索引

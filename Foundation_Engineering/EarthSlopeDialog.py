@@ -49,11 +49,11 @@ class EarthSlopeDialog(QDialog):
         # 更新坡顶作用荷载
         self.slope_calculation_data.slope_top_load.uniform_load = float(self.load_input1.text())
         # 更新基本参数
-        self.slope_calculation_data.basic_parameters.soil_type = self.soil_type_combobox.currentText()
-        self.slope_calculation_data.basic_parameters.unit_weight = float(self.Basic_soilweight.text())
-        self.slope_calculation_data.basic_parameters.internal_friction_angle = float(self.basic_InternalFrictionAngle.text())
-        self.slope_calculation_data.basic_parameters.cohesion = float(self.basic_soilCohesion.text())
-        self.slope_calculation_data.basic_parameters.slope_angle = float(self.basic_slopeAngle.text())
+        self.slope_calculation_data.basic_parameters.soil_type = self.soil_type_combobox.currentText()#坑壁土的类型
+        self.slope_calculation_data.basic_parameters.unit_weight = float(self.Basic_soilweight.text())#土的重度
+        self.slope_calculation_data.basic_parameters.internal_friction_angle = float(self.basic_InternalFrictionAngle.text())#土的内摩擦角
+        self.slope_calculation_data.basic_parameters.cohesion = float(self.basic_soilCohesion.text())#土粘聚力
+        self.slope_calculation_data.basic_parameters.slope_angle = float(self.basic_slopeAngle.text())#边坡的坡度角
         return self.slope_calculation_data
     def initUI(self):
         self.setWindowTitle('土方边坡计算')
@@ -132,7 +132,7 @@ class EarthSlopeDialog(QDialog):
         self.basic_soilCohesion.setText(str(self.slope_calculation_data.basic_parameters.cohesion))  # 使用数据填充
         self.basic_soilCohesion_lable = QLabel("土粘聚力c(kN/㎡):")
         self.basic_soilCohesion.textChanged.connect(self.markUnsavedChanges)
-        parameter_layout.addRow(self.basic_soilCohesion_lable, QLineEdit("12"))
+        parameter_layout.addRow(self.basic_soilCohesion_lable, self.basic_soilCohesion)
 
 
         self.basic_slopeAngle  = QLineEdit()  # 边坡的坡度角θ"45"
