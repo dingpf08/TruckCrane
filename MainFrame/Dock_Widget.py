@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QWidget,QDockWidget, QListWidget, QListWidgetItem, QApplication, QMainWindow
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton
+import math
+from DataStruDef.CalculateType import ConstructionCalculationType as CCType#计算类型
 #父窗口为MainFrame.py中的class MainWindow(QMainWindow):
 class CalculateDockWidget(QDockWidget):
     def __init__(self, title, parent=None):
@@ -41,8 +43,55 @@ class CalculateDockWidget(QDockWidget):
         self.buttons[2].clicked.connect(self.onCalculationDisclosureClicked)#计算交底
 
     def onDesignCalculationClicked(self, item):  # 设计计算
+        parent_dialog = self.parent()#MainWindow
+        # 检查是否真的有父窗口
+        if parent_dialog:  #
+            #获取tab窗口
+            Tab_dialog = parent_dialog.m_ECST#标签页
+            currentdata = Tab_dialog.GetCurrentDialogData()  # 获取到了当前选择的tab对话框的数据
+            conCalType = currentdata.conCalType
+            if conCalType == CCType.SOIL_EMBANKMENT_CALCULATION:  # 土方边坡计算
+                print("开始土方边坡计算")
+                if currentdata.verification_project.project_type == "土方直立壁开挖深度计算":
+                    print("土方直立壁开挖深度计算")
+                    # hmax = 2×c/(K×γ×tan(45°-φ/2))-q/γ
+                    # 其中，hmax - -土方最大直壁开挖高度
+                    # q - -坡顶护到均布荷载
+                    # γ - -坑壁土的重度(kN/m3)
+                    # φ - -坑壁土的内摩擦角(°)
+                    # c - -坑壁土粘聚力(kN/m2)
+                    # K - -安全系数（一般用1.25 ）
+                    # hmax = 2×12.0/(1.25×20.00×tan(45°-15.0°/2))-2.0/20.00=1.15m；
+                    # 将角度转换为弧度
+                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
+                    k = 1.25  # K - -安全系数（一般用1.25 ）
+                    γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
+                    q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
+                    slope_angle_in_degrees = currentdata.basic_parameters.slope_angle
+                    slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)
+                    Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
+                    Hmax_rounded = round(Hmax, 2)  # 保留两位小数
+                    # 输出试算结果
+                    print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
+                    #输出计算结果到word文档
+                    pass
+                elif currentdata.verification_project.project_type == "基坑安全边坡计算":
+                    print("基坑安全边坡计算")
+                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
+                    θ = currentdata.basic_parameters.slope_angle  # 边坡的坡度角
+                    θ_Radians = math.radians(θ)  # 边坡的坡度角弧度
+                    φ = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角φ(°)
+                    φ_Radians = math.radians(φ)  # 坑壁土的内摩擦角φ(°)
+                    γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
+                    θγ_Radians = (θ - φ) / 2
+                    Hight = 2 * c * math.sin(θ_Radians) * math.cos(φ_Radians) / (γ * math.sin(θγ_Radians) ** 2)
+                    Hight_rounded = round(Hight, 2)  # 保留两位小数
+                    # 输出试算结果
+                    print(f"1.设计计算：土坡允许最大高度为为{Hight_rounded}m。")
+                    # 输出计算结果到word文档
+                    pass
 
-        print("设计计算")
+        print("设计计算结束")
     def onConstructionSchemeClicked(self, item):  # 施工方案
         print("施工方案")
     def onCalculationDisclosureClicked(self, item):#计算交底
