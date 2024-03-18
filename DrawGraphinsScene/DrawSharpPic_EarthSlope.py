@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsS
     QTextEdit, QPushButton, QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
+import math
+from DataStruDef.CalculateType import ConstructionCalculationType as CCType#计算类型
 #视口区域
 class DrawingWidget(QGraphicsView):
     def __init__(self):
@@ -127,7 +129,7 @@ class MultipleViewports(QMainWindow):
         buttonsLayout = QHBoxLayout()
 
         button1 = QPushButton("快速计算")
-        button1.clicked.connect(lambda: self.buttonClicked("快速计算"))
+        button1.clicked.connect(lambda: self.QuickCal_ButtonClicked("快速计算"))
 
         buttonsLayout.addWidget(button1)
 
@@ -146,24 +148,54 @@ class MultipleViewports(QMainWindow):
         self.setCentralWidget(mainWidget)
 
     #快速计算
-    def buttonClicked(self, buttonText):
+    def QuickCal_ButtonClicked(self, buttonText):
         #1、获取本次计算的参数，进行试算，给出试算结果，输出到self.textEdit
-        parent_dialog=self.parent();#QSplitter
+        parent_dialog=self.parent();#MultipleViewports添加到了QSplitter控件
         # 检查是否真的有父窗口
         if parent_dialog:#
             print(parent_dialog.objectName())
-            grand_parent_dialog=parent_dialog.parent() # EarthSlopeDialog等子对话框
+            grand_parent_dialog=parent_dialog.parent() # QSplitter控件添加到了EarthSlopeDialog等子对话框
             if grand_parent_dialog:
-                grand_grand_parent_dialog=grand_parent_dialog.parent()#QWidget
+                grand_grand_parent_dialog=grand_parent_dialog.parent()#EarthSlopeDialog等子对话框添加到了QWidget
                 if grand_grand_parent_dialog:
-                    parents_3grand_parent_dialog=grand_grand_parent_dialog.parent()#stackedWidget
+                    parents_3grand_parent_dialog=grand_grand_parent_dialog.parent()#QWidget添加到了stackedWidget
                     if parents_3grand_parent_dialog:
-                        parents_4grand_parent_dialog=parents_3grand_parent_dialog.parent()#QWidget 标签管理页面class ECSTabWidget(QTabWidget)
-                        currentdata = parents_4grand_parent_dialog.GetCurrentDialogData()#获取到了当前选择的tab的数据
-                        print(f"{currentdata}")
-        #输出试算结果
-        self.textEdit.clear()
-        self.textEdit.append(f"{buttonText} 被点击了")
+                        parents_4grand_parent_dialog=parents_3grand_parent_dialog.parent()#stackedWidget添加到了class ECSTabWidget(QTabWidget)
+                        currentdata = parents_4grand_parent_dialog.GetCurrentDialogData()#获取到了当前选择的tab对话框的数据
+                        conCalType = currentdata.conCalType
+                        if conCalType==CCType.SOIL_EMBANKMENT_CALCULATION:# 土方边坡计算
+                            print("开始土方边坡计算")
+                            if currentdata.verification_project.project_type=="土方直立壁开挖深度计算":
+                                print("土方直立壁开挖深度计算")
+                                # hmax = 2×c/(K×γ×tan(45°-φ/2))-q/γ
+                                #其中，hmax - -土方最大直壁开挖高度
+                                #q - -坡顶护到均布荷载
+                                #γ - -坑壁土的重度(kN/m3)
+                                #φ - -坑壁土的内摩擦角(°)
+                                #c - -坑壁土粘聚力(kN/m2)
+                                #K - -安全系数（一般用1.25 ）
+                                #hmax = 2×12.0/(1.25×20.00×tan(45°-15.0°/2))-2.0/20.00=1.15m；
+                                # 将角度转换为弧度
+                                c=currentdata.basic_parameters.cohesion#坑壁土粘聚力
+                                k = 1.25  # K - -安全系数（一般用1.25 ）
+                                γ=currentdata.basic_parameters.unit_weight#坑壁土的重度
+                                q=currentdata.slope_top_load.uniform_load#坡顶护道均布荷载
+                                slope_angle_in_degrees = currentdata.basic_parameters.slope_angle
+                                slope_angle_in_radians = math.radians(45-slope_angle_in_degrees/2)
+                                Hmax=2*c/(k*γ*math.tan(slope_angle_in_radians))-q/γ
+                                Hmax_rounded = round(Hmax, 2)#保留两位小数
+                                # 输出试算结果
+                                self.textEdit.clear()
+                                self.textEdit.append(f"坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
+                                pass
+                            elif currentdata.verification_project.project_type=="基坑安全边坡计算":
+                                print("基坑安全边坡计算")
+                                # 输出试算结果
+                                self.textEdit.clear()
+                                self.textEdit.append(f"坑壁土方立直壁最大开挖高度为m。")
+
+                                pass
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
