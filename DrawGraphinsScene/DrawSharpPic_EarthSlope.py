@@ -186,14 +186,22 @@ class MultipleViewports(QMainWindow):
                                 Hmax_rounded = round(Hmax, 2)#保留两位小数
                                 # 输出试算结果
                                 self.textEdit.clear()
-                                self.textEdit.append(f"坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
+                                self.textEdit.append(f"1.坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
                                 pass
                             elif currentdata.verification_project.project_type=="基坑安全边坡计算":
                                 print("基坑安全边坡计算")
+                                c=currentdata.basic_parameters.cohesion#坑壁土粘聚力
+                                θ=currentdata.basic_parameters.slope_angle#边坡的坡度角
+                                θ_Radians=math.radians(θ)#边坡的坡度角弧度
+                                φ=currentdata.basic_parameters.internal_friction_angle#坑壁土的内摩擦角φ(°)
+                                φ_Radians=math.radians(φ)#坑壁土的内摩擦角φ(°)
+                                γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
+                                θγ_Radians=(θ-φ)/2
+                                Hight= 2 * c * math.sin(θ_Radians)*math.cos(φ_Radians) / (γ * math.sin(θγ_Radians) ** 2)
+                                Hight_rounded = round(Hight, 2)  # 保留两位小数
                                 # 输出试算结果
                                 self.textEdit.clear()
-                                self.textEdit.append(f"坑壁土方立直壁最大开挖高度为m。")
-
+                                self.textEdit.append(f"1.土坡允许最大高度为为{Hight_rounded}m。")
                                 pass
 
 
