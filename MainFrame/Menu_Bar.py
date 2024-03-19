@@ -19,7 +19,13 @@ class ECSMenuBar(QMenuBar):
         file_menu.addAction(exit_action)
 
     def exit_application(self):
-        sys.exit()
+        print(f"点击了“退出”按钮")
+        if isinstance(self.parent(), QMainWindow):
+            # 如果父窗口是 MainWindow 实例,调用 SaveBeforClose 方法
+            self.parent().SaveBeforeClose()
+        else:
+            # 如果父窗口不是 MainWindow 实例,直接退出应用程序
+            sys.exit()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -37,26 +37,33 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.m_ECST)
         # 左侧添加浮动窗口
         self.addDockWidget(Qt.LeftDockWidgetArea, self.m_CalDock)
-
-    def closeEvent(self, event):
+    def SaveBeforeClose(self):
         reply = QMessageBox.question(self, '请选择下一步操作', '是否保存当前工程？',
-                                     QMessageBox.Yes | QMessageBox.No| QMessageBox.Cancel, QMessageBox.No)
+                                     QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
             # 用户选择了保存数据，弹出文件保存对话框让用户选择保存位置
             file_name, _ = QFileDialog.getSaveFileName(
                 self, "保存文件", os.getenv('HOME'), "ZtzpCCS Files (*.ZtzpCCS)")
             if file_name:
-                if not file_name.endswith('.ZtzpCCS'):#序列化的文件后缀为ZtzpCCS
+                if not file_name.endswith('.ZtzpCCS'):  # 序列化的文件后缀为ZtzpCCS
                     file_name += '.ZtzpCCS'
                 self.m_ECST.serialize_dialog_data_map(file_name)
-            event.accept()#退出保存数据
-        elif reply==QMessageBox.No:
-            event.accept()#退出不保存
-        elif reply==QMessageBox.Cancel:
-            event.ignore()#不退出
+            return True  # 返回 True 表示允许退出
 
+        elif reply == QMessageBox.No:
+            return True  # 返回 True 表示允许退出
 
+        elif reply == QMessageBox.Cancel:
+            return False  # 返回 False 表示取消退出
+
+        # 默认情况下,不退出
+        return False
+    def closeEvent(self, event):
+        if self.SaveBeforeClose():
+            event.accept()  # 允许退出
+        else:
+            event.ignore()  # 取消退出
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
