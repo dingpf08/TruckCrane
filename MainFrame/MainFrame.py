@@ -21,11 +21,12 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle('施工计算软件')
         self.setGeometry(100, 100, 800, 600)
+        self.m_CalDock = CalculateDockWidget('工程树图', self)#必须放在self.m_ECST的前面
         self.m_menu=ECSMenuBar(self)# 1、水平顶部设置菜单栏
         self.m_toolbar=ToolBar(self) # 2、水平中间添加工具栏
         self.m_statusbar=StatusBar(self)# 3、底部设置状态栏
         self.m_ECST=ECSTabWidget(self)# 4、设置中心标签页
-        self.m_CalDock=CalculateDockWidget('工程树图', self)
+
         # 顶部设置菜单栏
         self.setMenuBar(self.m_menu)
         # 中间添加工具栏

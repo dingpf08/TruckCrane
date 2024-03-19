@@ -38,7 +38,7 @@ class SlopeCalculationData:
     """
     def __init__(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters,caltypename="土方边坡计算"):
         self.caltypename=caltypename#计算类型文字版
-        self.conCalType=ConCalType.SOIL_EMBANKMENT_CALCULATION#土方边坡计算
+        self.conCalType=ConCalType.SOIL_EMBANKMENT_CALCULATION#ABC土方边坡计算
         # 验算项目
         self.verification_project = verification_project
         # 坡顶作用荷载
