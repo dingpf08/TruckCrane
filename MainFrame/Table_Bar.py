@@ -2,13 +2,14 @@ import pickle
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication, \
-    QMessageBox
+    QMessageBox, QMainWindow
 from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QMouseEvent
 #父窗口是class MainWindow(QMainWindow)
 from Foundation_Engineering.EarthSlopeDialog import EarthSlopeDialog#边坡计算对话框
 from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
 from DataStruDef.CalculateType import ConstructionCalculationType as Conct#对话框类型
+
 #序列化文件的后缀为ZtzpCCS
 #标签页，管理各种对话框
 #这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
@@ -71,9 +72,33 @@ class ECSTabWidget(QTabWidget):
                 print(f"标签页 {index} 没有设置UUID。")
         else:
             print(f"没有找到标签页 {index} 对应的widget。")
+
     def onTabChanged(self, index):
+        print("切换标签页")
         m_index=index#设置当前标签页
         self.m_CurrentData=self.CurrentDialogData(index)
+        if self.m_CurrentData is None:
+            # 设计计算按钮可以用
+            paraentDialog = self.parent()
+            if paraentDialog:
+                # 如果父窗口对象存在，确保它是您期望的类型，例如 MainWindow
+                if isinstance(paraentDialog, QMainWindow):
+                    caldock = paraentDialog.m_CalDock
+                    if caldock:
+                         caldock.Set_ButtonEnable_Bytext("设计计算",False)
+        elif self.m_CurrentData.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:
+            #设计计算按钮可以用
+            paraentDialog=self.parent()
+            if paraentDialog:
+                # 如果父窗口对象存在，确保它是您期望的类型，例如 MainWindow
+                if isinstance(paraentDialog, QMainWindow):
+                    caldock=paraentDialog.m_CalDock
+                    if caldock:
+                        caldock.Set_ButtonEnable_Bytext("设计计算", True)
+
+
+
+
 
     def serialize_dialog_data_map(self, file_name):
         """将对话框数据字典序列化到指定的文件中。"""

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget,QDockWidget, QListWidget, QListWidgetItem, QApplication, QMainWindow
+from PyQt5.QtWidgets import QWidget, QDockWidget, QListWidget, QListWidgetItem, QApplication, QMainWindow, QFileDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton
 from WordMerge import WordDocumentMerger as WordMer#输出word文档
@@ -58,6 +58,16 @@ class CalculateDockWidget(QDockWidget):
         for btn in self.buttons:
             if btn.text() == text:
                 btn.setEnabled(bool)
+    #用户选择存储文件的路径
+    def select_destination_folder(self):
+        # 创建一个应用程序实例
+        app = QApplication([])
+        # 打开文件夹选择对话框
+        folder_path = QFileDialog.getExistingDirectory(None, 'Select Folder')
+        # 使用 exec_() 方法堵塞进程，直到对话框关闭
+        app.exec_()
+        return folder_path
+
     def onDesignCalculationClicked(self, item):  # 设计计算
         parent_dialog = self.parent()#MainWindow
         # 检查是否真的有父窗口
@@ -82,34 +92,50 @@ class CalculateDockWidget(QDockWidget):
                     # K - -安全系数（一般用1.25 ）
                     # hmax = 2×12.0/(1.25×20.00×tan(45°-15.0°/2))-2.0/20.00=1.15m；
                     # 将角度转换为弧度
-                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
-                    k = 1.25  # K - -安全系数（一般用1.25 ）
+                    soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
                     γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
-                    q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
-                    slope_angle_in_degrees = currentdata.basic_parameters.slope_angle
+                    slope_angle_in_degrees = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角
                     slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)
+                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
+                    q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
+                    k = 1.25  # K - -安全系数（一般用1.25 ）
                     Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
                     Hmax_rounded = round(Hmax, 2)  # 保留两位小数
                     # 输出试算结果
                     print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
                     #输出计算结果到word文档
-                    destination_file=r"C:\Users\CN\Desktop\Waste"
-                    #destination_file = "C:/Users/CN/Desktop/Waste"#这种方式也是可以的
+                    # 调用函数并获取用户选择的文件夹路径
+                    #destination_file = self.select_destination_folder()
+                    destination_file = r"C:\Users\CN\Desktop\Waste"#这种方式可以
                     output_filename="计算书.docx"
                     content=None#正文内容
+                    if destination_file is None:
+                        print(f"没有选择存储路径")
+                        return
                     merger = WordMer(destination_file,output_filename )
                     merger.Set_Main_Title("土方直立壁开挖深度计算")
                     merger.Type_Main_Title()
-                    content="计算依据：\n1、《建筑基坑支护技术规程》JGJ120 - 2012\n2、《建筑施工计算手册》江正荣编著\n3、《实用土木工程手册》第三版杨文渊编著\n4、《施工现场设施安全设计计算手册》谢建民编著\n5、《地基与基础》第三版\n本工程，基坑土质为粘性土，且地下水位低于基坑底面标高，挖方边坡可以做成直立壁不加支撑。最大允许直壁高度按以下方法计算。"
+                    content="计算依据：\n1、《建筑基坑支护技术规程》JGJ120 - 2012\n2、《建筑施工计算手册》江正荣编著\n3、《实用土木工程手册》第三版杨文渊编著\n4、《施工现场设施安全设计计算手册》谢建民编著\n5、《地基与基础》第三版"
                     merger.Set_Doc_Content(content)
                     merger.Type_Doc_Content()
+                    content=f"本工程，基坑土质为{soil_type}，且地下水位低于基坑底面标高，挖方边坡可以做成直立壁不加支撑。最大允许直壁高度按以下方法计算。"
+                    merger.Set_Doc_Content(content)
+                    merger.Type_Doc_Content()
+
                     merger.Set_First_Title("一、参数信息")
                     merger.Type_First_Title()
-                    content="坑壁土类型：粘性土"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
+                    table_data = [
+                        ["坑壁土类型", soil_type, "坑壁土的重度γ(kN/m³)", γ],
+                        ["坑壁土的内摩擦角φ(°)", slope_angle_in_degrees, "坑壁土粘聚力c(kN/m²)", c],
+                        ["坑顶护道上均布荷载q(kN/m²)", q, "", ""]
+                    ]
+                    merge_info = [(3, 3, 3, 4)]#合并第三行的第三列和第四列
+                    # 合并信息，每个元组代表一个合并的范围 (开始行, 开始列, 结束行, 结束列)
+                    merger.insert_table(table_data,merge_info)
+
                     merger.Set_First_Title("二、土方直立壁开挖高度计算:")
                     merger.Type_First_Title()
+
                     content="土方最大直壁开挖高度按以下公式计算 ：" \
                             "\nhmax = 2×c / (K×γ×tan(45°-φ / 2))-q / γ\
                             \n其中，hmax - -土方最大直壁开挖高度\
@@ -117,11 +143,19 @@ class CalculateDockWidget(QDockWidget):
                             \nγ - -坑壁土的重度(kN/m3)\
                             \nφ - -坑壁土的内摩擦角(°)\
                             \nc - -坑壁土粘聚力(kN / m2)\
-                            \nK - -安全系数（一般用1.25 ）\
-                            \nhmax = 2×12.0 / (1.25×20.00×tan(45°-15.0° / 2))-2.0 / 20.00 = 1.15m；\
-                            \n本工程的基坑土方立直壁最大开挖高度为1.15m。"
+                            \nK - -安全系数（一般用1.25 ）"
                     merger.Set_Doc_Content(content)
                     merger.Type_Doc_Content()
+                    content = (
+                        f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
+                        f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
+                    )
+                    merger.Set_Doc_Content(content)
+                    merger.Type_Doc_Content()
+                    content = f"本工程的基坑土方立直壁最大开挖高度为{Hmax:.2f}m。"
+                    merger.Set_Doc_Content(content)
+                    merger.Type_Doc_Content()
+                    merger.insert_image(r"D:\Cache\ztzp-ConCaSys\DrawGraphinsScene\slope - word.png")#插入图片
                     #merger.quit_docs()
                     pass
                 elif currentdata.verification_project.project_type == "基坑安全边坡计算":
