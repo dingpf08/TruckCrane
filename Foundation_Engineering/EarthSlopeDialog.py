@@ -2,7 +2,8 @@
 import sys
 import uuid
 import pickle
-from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, \
+    QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
 from DrawGraphinsScene.DrawSharpPic_EarthSlope import MultipleViewports as DrawArea  # 自己绘制绘图区域
@@ -103,12 +104,13 @@ class EarthSlopeDialog(QDialog):
         parameter_group = QGroupBox("基本参数")
         parameter_layout = QFormLayout()
 
-        self.soil_types = ["粘性土", "红粘土", "粉土", "粉砂", "细砂", "中砂", "粗砂", "砾砂"]
+        self.soil_types = ["填土", "淤泥", "淤泥质二", "粘性土", "红粘土", "粉土", "粉砂", "细砂", "中砂", "粗砂", "砾砂", "角砾", "圆砾", "碎石", "卵石", "风化岩", "中风化岩", "微风化岩", "新鲜岩"]
         self.soil_type_combobox = QComboBox()#土的类型
         self.soil_type_combobox.addItems(self.soil_types)
         soil_type_index = self.soil_types.index(self.slope_calculation_data.basic_parameters.soil_type)
         self.soil_type_combobox.setCurrentIndex(soil_type_index)
-        self.soil_type_combobox.currentIndexChanged.connect(self.markUnsavedChanges)  # 连接信号
+        self.soil_type_combobox.currentIndexChanged.connect(self.markUnsavedChanges)  # 连接信号，告诉系统对话框修改了
+        self.soil_type_combobox.currentIndexChanged.connect(self.checkSoilType)  # 新增检查土类型的方法
         self.soil_types_lable=QLabel("坑壁土类型:")
         parameter_layout.addRow(self.soil_types_lable, self.soil_type_combobox)
 
@@ -183,10 +185,22 @@ class EarthSlopeDialog(QDialog):
                 self.basic_slopeAngle.setEnabled(True)  # 边坡的坡度角
                 # 这里可以添加更多针对此选项的代码
             self.right_layout.ChangeLoadImage(radio_text)#根据选择的类型不同切换图片
-    #一旦修改，调用这个函数，使得对话框处于未保存状态
+    #一旦控件修改，调用这个函数，使得对话框处于未保存状态
     def markUnsavedChanges(self):#不能保存，需要弹出对话框
         # 当控件的参数被修改时，将IsSave设置为False
         self.IsSave = False
+    def checkSoilType(self):
+        if self.radio1.isChecked():# 首先检查当前的计算类型是否为"土方直立壁开挖深度计算"
+            selected_soil_type = self.soil_type_combobox.currentText()
+            # 定义触发警告的土类型列表
+            warning_soil_types = ["细砂", "中砂", "粗砂", "砾砂", "角砾", "圆砾", "碎石", "卵石"]
+            if selected_soil_type in warning_soil_types:
+                # 弹出警告对话框
+                ret =QMessageBox.warning(self, "提示信息", "土方直立壁开挖不能选择土粘聚力为0的砂土等类型", QMessageBox.Ok)
+                # 如果用户点击了确认按钮
+                if ret == QMessageBox.Ok:
+                    # 将选择的内容改为列表的第一个选项
+                    self.soil_type_combobox.setCurrentIndex(0)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     earth_slope_dialog = EarthSlopeDialog()
