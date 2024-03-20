@@ -26,7 +26,50 @@ class MainWindow(QMainWindow):
         self.m_toolbar=ToolBar(self) # 2、水平中间添加工具栏
         self.m_statusbar=StatusBar(self)# 3、底部设置状态栏
         self.m_ECST=ECSTabWidget(self)# 4、设置中心标签页
-
+        # 应用全局样式表
+        # 应用全局样式表
+        self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #f0f0f0; /* 浅灰色背景 */
+                }
+                QMenuBar {
+                    background-color: #e0e0e0;
+                    color: #333333;
+                }
+                QMenuBar::item:selected {
+                    background-color: #d0e4f7; /* 选中菜单时的颜色 */
+                }
+                QToolBar {
+                    background-color: #e0e0e0;
+                    spacing: 3px; /* 工具栏项目间距 */
+                }
+                QPushButton {
+                    background-color: #d0e4f7;
+                    border: none;
+                    padding: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #c0d4e7;
+                }
+                QLabel, QDockWidget {
+                    color: #333333;
+                }
+                QStatusBar {
+                    background-color: #e0e0e0;
+                    color: #333333;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #a0a0a0; /* 标签页边框 */
+                }
+                QTabBar::tab {
+                    background: #f0f0f0;
+                    padding: 5px;
+                }
+                QTabBar::tab:selected {
+                    background: #d0e4f7;
+                    margin-bottom: -1px;
+                }
+            """)
         # 顶部设置菜单栏
         self.setMenuBar(self.m_menu)
         # 中间添加工具栏

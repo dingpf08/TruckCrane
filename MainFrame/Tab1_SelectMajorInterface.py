@@ -26,7 +26,7 @@ class EngineerFuctionSelPage(QDialog):
         # 创建背景画刷
         brush = QBrush(pixmap)
         # 设置背景
-        self.setStyleSheet("background-image: url(Pic/background.png);")
+        self.setStyleSheet("background-image: url(Pic/background.png);")#背景图片
         # 按钮图标和名称
         buttons_info = [
             ('EngnieeringDialog\icon1.png', '基坑工程'),

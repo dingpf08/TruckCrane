@@ -171,20 +171,6 @@ class EarthSlopeDialog(QDialog):
     def Getuuid(self):
         return self.uuid
 
-    #检查土的重度
-    def checkSoilWeight(self):
-        try:
-            weight = float(self.Basic_soilweight.text())
-            if weight < 0.1 or weight > 40:
-                QMessageBox.warning(self, "土重度输入错误", "请输入0.1（包含）到40（包含）之间的实数")
-                self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
-        except ValueError:
-            QMessageBox.warning(self, "输入错误", "请输入有效的实数")
-            self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
-        # 将焦点设置回土的重度输入框，并选中文本以便于修改
-        self.Basic_soilweight.setFocus()
-        self.Basic_soilweight.selectAll()
-
     #切换“土方直立壁开挖深度计算”和“基坑安全边坡计算”
     def on_radio_clicked(self):
         radio_button = self.sender()#在Qt框架（和PyQt）中，
@@ -214,6 +200,19 @@ class EarthSlopeDialog(QDialog):
                 self.checkInternalFrictionAngle()#检查土的内摩擦角是否在范围内
                 self.checkSlopeAngle()#边坡的坡度角检查
             self.right_layout.ChangeLoadImage(radio_text)#根据选择的类型不同切换图片
+    #检查土的重度
+    def checkSoilWeight(self):
+        try:
+            weight = float(self.Basic_soilweight.text())
+            if weight < 0.1 or weight > 40:
+                QMessageBox.warning(self, "土重度输入错误", "请输入0.1（包含）到40（包含）之间的实数")
+                self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
+        except ValueError:
+            QMessageBox.warning(self, "输入错误", "请输入有效的实数")
+            self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
+        # 将焦点设置回土的重度输入框，并选中文本以便于修改
+        self.Basic_soilweight.setFocus()
+        self.Basic_soilweight.selectAll()
     #一旦控件修改，调用这个函数，使得对话框处于未保存状态
     def markUnsavedChanges(self):#不能保存，需要弹出对话框
         # 当控件的参数被修改时，将IsSave设置为False
