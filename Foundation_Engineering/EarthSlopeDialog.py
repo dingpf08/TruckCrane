@@ -90,10 +90,11 @@ class EarthSlopeDialog(QDialog):
         load_layout = QVBoxLayout()
         load_hbox1 = QHBoxLayout()
         self.load_label1 = QLabel("坑顶护道上均布荷载 q(kN/m²):")
-        self.load_input1 = QLineEdit()
+        self.load_input1 = QLineEdit()#坑顶护道上均布荷载
         self.load_input1.setText(str(self.slope_calculation_data.slope_top_load.uniform_load))
         # 连接文本框、组合框等的信号到markUnsavedChanges方法
         self.load_input1.textChanged.connect(self.markUnsavedChanges)
+        self.load_input1.editingFinished.connect(self.checkTopLoad)
         load_hbox1.addWidget(self.load_label1)
         load_hbox1.addWidget(self.load_input1)
         load_layout.addLayout(load_hbox1)
@@ -118,11 +119,13 @@ class EarthSlopeDialog(QDialog):
         self.Basic_soilweight = QLineEdit()#土的重度γ(kN/m³)"20"
         self.Basic_soilweight.setText(str(self.slope_calculation_data.basic_parameters.unit_weight))
         self.Basic_soilweight_lable=QLabel("土的重度γ(kN/m³):")
+        self.Basic_soilweight.editingFinished.connect(self.checkSoilWeight)#结束编辑
         self.Basic_soilweight.textChanged.connect(self.markUnsavedChanges)
         parameter_layout.addRow(self.Basic_soilweight_lable, self.Basic_soilweight)
 
 
         self.basic_InternalFrictionAngle= QLineEdit()#土的内摩擦角ϕ(°)"15"
+        self.basic_InternalFrictionAngle.editingFinished.connect(self.checkInternalFrictionAngle)#用户输入完成
         self.basic_InternalFrictionAngle_lable = QLabel("土的内摩擦角ϕ(°):")
         self.basic_InternalFrictionAngle.setText(
             str(self.slope_calculation_data.basic_parameters.internal_friction_angle))
@@ -134,6 +137,7 @@ class EarthSlopeDialog(QDialog):
         self.basic_soilCohesion.setText(str(self.slope_calculation_data.basic_parameters.cohesion))  # 使用数据填充
         self.basic_soilCohesion_lable = QLabel("土粘聚力c(kN/㎡):")
         self.basic_soilCohesion.textChanged.connect(self.markUnsavedChanges)
+        self.basic_soilCohesion.editingFinished.connect(self.checkSoilCohesion)#检查数据是否在范围内
         parameter_layout.addRow(self.basic_soilCohesion_lable, self.basic_soilCohesion)
 
 
@@ -141,6 +145,7 @@ class EarthSlopeDialog(QDialog):
         self.basic_slopeAngle.setText(str(self.slope_calculation_data.basic_parameters.slope_angle))  # 使用数据填充
         self.basic_slopeAngle_lable = QLabel("边坡的坡度角θ(°):")
         self.basic_slopeAngle.textChanged.connect(self.markUnsavedChanges)
+        self.basic_slopeAngle.editingFinished.connect(self.checkSlopeAngle)#检查数据是否在范围内
         parameter_layout.addRow(self.basic_slopeAngle_lable, self.basic_slopeAngle)
 
         parameter_group.setLayout(parameter_layout)
@@ -165,9 +170,27 @@ class EarthSlopeDialog(QDialog):
         #返回对话框的uuid
     def Getuuid(self):
         return self.uuid
+
+    #检查土的重度
+    def checkSoilWeight(self):
+        try:
+            weight = float(self.Basic_soilweight.text())
+            if weight < 0.1 or weight > 40:
+                QMessageBox.warning(self, "土重度输入错误", "请输入0.1（包含）到40（包含）之间的实数")
+                self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
+        except ValueError:
+            QMessageBox.warning(self, "输入错误", "请输入有效的实数")
+            self.Basic_soilweight.setFocus()  # 将焦点重新设置到输入框
+        # 将焦点设置回土的重度输入框，并选中文本以便于修改
+        self.Basic_soilweight.setFocus()
+        self.Basic_soilweight.selectAll()
+
     #切换“土方直立壁开挖深度计算”和“基坑安全边坡计算”
     def on_radio_clicked(self):
-        radio_button = self.sender()
+        radio_button = self.sender()#在Qt框架（和PyQt）中，
+        # sender()方法用于确定哪个QWidget（例如按钮、单选按钮、复选框等）发出了当前正在处理的信号。当
+        # 在事件处理方法（例如槽函数）中调用self.sender()时，它会返回触发当前事件的对象的引用。
+        # 这允许您在一个事件处理方法中处理来自多个对象的信号，而不需要为每个对象创建单独的方法。
         if radio_button.isChecked():
             radio_text=radio_button.text()
             if radio_text == "土方直立壁开挖深度计算":
@@ -184,12 +207,30 @@ class EarthSlopeDialog(QDialog):
                 self.basic_slopeAngle_lable.setEnabled(True)  # 边坡的坡度角
                 self.basic_slopeAngle.setEnabled(True)  # 边坡的坡度角
                 # 这里可以添加更多针对此选项的代码
+                # 检查各个输入框的数据是否合理
+                self.checkTopLoad()#坡顶作用荷载参数合理性检查
+                self.checkSoilWeight()#检查土的重度
+                self.checkSoilCohesion()#土的粘聚力数值的检查
+                self.checkInternalFrictionAngle()#检查土的内摩擦角是否在范围内
+                self.checkSlopeAngle()#边坡的坡度角检查
             self.right_layout.ChangeLoadImage(radio_text)#根据选择的类型不同切换图片
     #一旦控件修改，调用这个函数，使得对话框处于未保存状态
     def markUnsavedChanges(self):#不能保存，需要弹出对话框
         # 当控件的参数被修改时，将IsSave设置为False
         self.IsSave = False
-        #选择不同土类型，弹出提示对话框
+    #坡顶作用荷载参数合理性检查
+    def checkTopLoad(self):
+        try:
+            top_load = float(self.load_input1.text())
+            if not 0 <= top_load <= 100:
+                QMessageBox.warning(self, "坡顶作用荷载输入错误", "请输入0（包含）到100（包含）之间的实数！")
+                self.load_input1.selectAll()
+                self.load_input1.setFocus()
+        except ValueError:
+            QMessageBox.warning(self, "坡顶作用荷载输入错误", "请输入有效的实数！")
+            self.load_input1.selectAll()
+            self.load_input1.setFocus()
+    #选择不同土类型，数值部队的时候，弹出提示对话框
     def checkSoilType(self):
         if self.radio1.isChecked():# 首先检查当前的计算类型是否为"土方直立壁开挖深度计算"
             selected_soil_type = self.soil_type_combobox.currentText()
@@ -202,6 +243,44 @@ class EarthSlopeDialog(QDialog):
                 if ret == QMessageBox.Ok:
                     # 将选择的内容改为列表的第一个选项
                     self.soil_type_combobox.setCurrentIndex(0)
+    #检查土的内摩擦角是否在范围内
+    def checkInternalFrictionAngle(self):
+        try:
+            angle = float(self.basic_InternalFrictionAngle.text())
+            if not 0 <= angle < 90:
+                QMessageBox.warning(self, "土的内摩擦角", "请输入0（包含）到90（不包含）之间的实数！")
+                self.basic_InternalFrictionAngle.selectAll()
+                self.basic_InternalFrictionAngle.setFocus()
+        except ValueError:
+            QMessageBox.warning(self, "输入错误", "请输入有效的实数！")
+            self.basic_InternalFrictionAngle.selectAll()
+            self.basic_InternalFrictionAngle.setFocus()
+    #土的粘聚力数值的检查
+    def checkSoilCohesion(self):
+        try:
+            cohesion = float(self.basic_soilCohesion.text())
+            if not 0 <= cohesion <= 50:
+                QMessageBox.warning(self, "输入错误", "请输入0（包含）到50（包含）之间的实数！")
+                self.basic_soilCohesion.selectAll()
+                self.basic_soilCohesion.setFocus()
+        except ValueError:
+            QMessageBox.warning(self, "输入错误", "请输入有效的实数！")
+            self.basic_soilCohesion.selectAll()
+            self.basic_soilCohesion.setFocus()
+    #边坡的坡度角检查
+    def checkSlopeAngle(self):
+        try:
+            angle = float(self.basic_slopeAngle.text())
+            if not 0 < angle <= 90:
+                QMessageBox.warning(self, "坡度角输入错误", "请输入0（不包含）到90（包含）之间的实数！")
+                self.basic_slopeAngle.selectAll()
+                self.basic_slopeAngle.setFocus()
+        except ValueError:
+            QMessageBox.warning(self, "输入错误", "请输入有效的实数！")
+            self.basic_slopeAngle.selectAll()
+            self.basic_slopeAngle.setFocus()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     earth_slope_dialog = EarthSlopeDialog()
