@@ -189,6 +189,7 @@ class EarthSlopeDialog(QDialog):
     def markUnsavedChanges(self):#不能保存，需要弹出对话框
         # 当控件的参数被修改时，将IsSave设置为False
         self.IsSave = False
+        #选择不同土类型，弹出提示对话框
     def checkSoilType(self):
         if self.radio1.isChecked():# 首先检查当前的计算类型是否为"土方直立壁开挖深度计算"
             selected_soil_type = self.soil_type_combobox.currentText()
