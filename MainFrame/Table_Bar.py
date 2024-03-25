@@ -46,6 +46,7 @@ class ECSTabWidget(QTabWidget):
                 dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
                 if dialog_data:
                     print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
+                    self.m_CurrentData=dialog_data
                     return dialog_data
             else:  # 数据还没有存储，没关系 从对话框钟直接获取
                 dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
@@ -67,7 +68,7 @@ class ECSTabWidget(QTabWidget):
 
     def onTabChanged(self, index):
         print("切换标签页")
-        m_index=index#设置当前标签页
+        self.m_index=index#设置当前标签页
         self.m_CurrentData=self.CurrentDialogData(index)
         if self.m_CurrentData is None:
             # 设计计算按钮可以用
