@@ -149,6 +149,7 @@ class MultipleViewports(QMainWindow):
 
     #快速计算
     def QuickCal_ButtonClicked(self, buttonText):
+        print("DrawSharpPic_EarthSlope.py:开始快速计算")
         #1、获取本次计算的参数，进行试算，给出试算结果，输出到self.textEdit
         parent_dialog=self.parent();#MultipleViewports添加到了QSplitter控件
         # 检查是否真的有父窗口
@@ -162,7 +163,9 @@ class MultipleViewports(QMainWindow):
                     if parents_3grand_parent_dialog:
                         parents_4grand_parent_dialog=parents_3grand_parent_dialog.parent()#stackedWidget添加到了class ECSTabWidget(QTabWidget)
                         currentdata = parents_4grand_parent_dialog.GetCurrentDialogData()#获取到了当前选择的tab对话框的数据
-                        conCalType = currentdata.conCalType
+                        conCalType = None
+                        if currentdata:
+                            conCalType=currentdata.conCalType
                         if conCalType==CCType.SOIL_EMBANKMENT_CALCULATION:# 土方边坡计算
                             print("开始土方边坡计算")
                             if currentdata.verification_project.project_type=="土方直立壁开挖深度计算":
@@ -203,7 +206,7 @@ class MultipleViewports(QMainWindow):
                                 self.textEdit.clear()
                                 self.textEdit.append(f"1.土坡允许最大高度为为{Hight_rounded}m。")
                                 pass
-
+        print("DrawSharpPic_EarthSlope.py:结束快速计算")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

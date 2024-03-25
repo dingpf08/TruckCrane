@@ -39,22 +39,14 @@ class ECSTabWidget(QTabWidget):
         if current_tab:  # 检查是否获取到了标签页
             uuid = current_tab.property("uuid")  # 获取这个标签页对应的UUID
             if uuid:  # 数据保存了，且存储在self.m_dialog_data_map
-                # 使用UUID从字典中获取对应的对话框数据
-                dialog_data = self.m_dialog_data_map.get(uuid)
+                dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
+                if dialog_instance is None:
+                    print(f"找不到UUID为 {uuid} 的对话框实例。")
+                    return
+                dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
                 if dialog_data:
-                    self.m_CurrentData = None  # 重置为空
-                    self.m_CurrentData = dialog_data  # 设置当前的数据内容
-                    print(f"切换到了标签页: {index}, UUID: {uuid}, 数据: {dialog_data}")
-                    # 这里可以添加你的逻辑来处理对话框数据，比如更新对话框的UI
-                else:  # 数据还没有存储，则
-                    dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
-                    if dialog_instance is None:
-                        print(f"找不到UUID为 {uuid} 的对话框实例。")
-                        return
-                    dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
-                    if dialog_data:
-                        print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
-                        return dialog_data
+                    print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
+                    return dialog_data
             else:  # 数据还没有存储，没关系 从对话框钟直接获取
                 dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
                 if dialog_instance is None:
