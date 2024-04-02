@@ -13,6 +13,11 @@ class DrawingWidget(QGraphicsView):
         self.initUI()
 
     def initUI(self):
+        """
+            初始化用户界面。
+            该方法配置了图形场景(scene)的属性，包括场景的大小、背景颜色等，并设置了渲染提示以提高画质。
+            同时，关闭了滚动条，并加载并适应了图像。
+            """
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(-1000000, -1000000, 2000000, 2000000)  # 根据需要调整
         self.setScene(self.scene)
@@ -25,6 +30,17 @@ class DrawingWidget(QGraphicsView):
         self.panning = False
 
     def loadAndFitImage(self):
+        """
+           加载并适配图像到场景中。
+
+           该函数从当前目录加载名为'slope.png'的图像，将其添加到图形场景中，并确保图像在场景中保持原始的宽高比进行适配显示。
+
+           参数:
+           无
+
+           返回值:
+           无
+           """
         current_directory = os.path.dirname(__file__)
         image_path = os.path.join(current_directory, 'slope.png')
         pixmap = QPixmap(image_path)
@@ -33,6 +49,12 @@ class DrawingWidget(QGraphicsView):
         self.fitInView(pixmapItem, Qt.KeepAspectRatio)
 
     def loadImage(self, image_name):
+        """
+            加载指定图像到图形场景中。
+
+            :param image_name: 图像文件的名称，相对于当前文件所在的路径。
+            :return: 无返回值。
+            """
         current_directory = os.path.dirname(os.path.abspath(__file__))
         image_path = os.path.join(current_directory, image_name)
         pixmap = QPixmap(image_path)
@@ -45,12 +67,30 @@ class DrawingWidget(QGraphicsView):
         self.fitInView(pixmapItem, Qt.KeepAspectRatio)
 
     def resizeEvent(self, event):
+        """
+           处理窗口大小改变事件。
+
+           当窗口被调整大小时，此函数将被调用。它首先调用超类的resizeEvent方法，然后检查场景中是否有项目。
+           如果有项目存在，它会调整视图以适应场景中的第一个项目，保持宽高比。
+
+           参数:
+           - event: QResizeEvent 对象，包含了窗口被调整的新尺寸信息。
+
+           返回值:
+           - 无
+           """
         super().resizeEvent(event)
         if not self.scene.items():
             return
         self.fitInView(self.scene.items()[0], Qt.KeepAspectRatio)
 
     def mouseDoubleClickEvent(self, event):
+        """
+            处理鼠标双击事件。
+
+            :param event: 鼠标双击事件对象，包含事件的详细信息。
+            :return: 无返回值。
+            """
         if event.button() == Qt.MiddleButton:
             if self.scene.items():
                 self.fitInView(self.scene.items()[0], Qt.KeepAspectRatio)
@@ -59,12 +99,32 @@ class DrawingWidget(QGraphicsView):
             super().mouseDoubleClickEvent(event)
 
     def wheelEvent(self, event):
+        """
+            处理鼠标滚轮事件的函数。
+
+            参数:
+            - self: 表示实例自身。
+            - event: 鼠标滚轮事件的对象，包含了事件的详细信息。
+
+            返回值:
+            - 无。
+            """
         factor = 1.2
         if event.angleDelta().y() < 0:
             factor = 1.0 / factor
         self.scale(factor, factor)
 
     def mousePressEvent(self, event):
+        """
+            处理鼠标按下事件的函数。
+
+            参数:
+            - self: 表示实例自身。
+            - event: 鼠标事件对象，包含了事件的详细信息。
+
+            返回值:
+            无
+            """
         if event.button() == Qt.MiddleButton:
             self.panning = True
             self.last_pos = event.pos()
