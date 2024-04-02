@@ -5,6 +5,7 @@ import win32com.client as win32
 
 # 合并多个word文档，应用模板里面的设置
 class WordDocumentMerger:
+
     def __init__(self, root_directory, output_filename):#root_directory：文件夹路径 output_filename：输出的文件名
         self.root_directory = root_directory
         # self.output_filename = root_directory+"\\"+ output_filename

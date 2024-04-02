@@ -1,3 +1,5 @@
+import sys
+
 from PyQt5.QtWidgets import QWidget, QDockWidget, QListWidget, QListWidgetItem, QApplication, QMainWindow, QFileDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton
@@ -68,6 +70,38 @@ class CalculateDockWidget(QDockWidget):
         app.exec_()
         return folder_path
 
+    def get_or_create_qapplication(self):
+        """
+            获取或创建一个QApplication实例。
+
+            本函数首先尝试获取当前实例，如果不存在，则创建一个新的QApplication实例。
+
+            参数:
+            self - 对象的自引用。
+
+            返回值:
+            返回QApplication的实例。
+            """
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication(sys.argv)
+        return app
+    def choose_directory_path(self):
+        app = self.get_or_create_qapplication()
+        # 设置对话框的起始目录，你可以根据需要更改它
+        # "" 表示当前目录，用户可以从这里开始浏览他们的文件系统
+        options = QFileDialog.Options()
+        # 调用 getExistingDirectory 方法打开文件夹选择对话框
+        directory = QFileDialog.getExistingDirectory(None,
+                                                     "选择文件夹",
+                                                     "",
+                                                     options=options)
+        if directory:
+            print(f"用户选择的文件夹路径是：{directory}")
+            return directory
+        else:
+            print("用户没有选择文件夹路径。")
+            return None
     def onDesignCalculationClicked(self, item):  # 设计计算
         parent_dialog = self.parent()#MainWindow
         # 检查是否真的有父窗口
@@ -102,11 +136,12 @@ class CalculateDockWidget(QDockWidget):
                     Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
                     Hmax_rounded = round(Hmax, 2)  # 保留两位小数
                     # 输出试算结果
+                    #注释
                     print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
                     #region 输出计算结果到word文档
                     # 调用函数并获取用户选择的文件夹路径
                     #destination_file = self.select_destination_folder()
-                    destination_file = r"C:\Users\CN\Desktop\Waste"#这种方式可以
+                    destination_file = self.choose_directory_path()#这种方式可以
                     output_filename="土方直立壁开挖深度计算.docx"
                     content=None#正文内容
                     if destination_file is None:
@@ -192,7 +227,7 @@ class CalculateDockWidget(QDockWidget):
                     # region 输出计算结果到word文档
                     # 调用函数并获取用户选择的文件夹路径
                     # destination_file = self.select_destination_folder()
-                    destination_file = r"C:\Users\CN\Desktop\Waste"  # 这种方式可以
+                    destination_file = self.choose_directory_path()  # 这种方式可以
                     output_filename = "基坑安全边坡计算.docx"
                     content = None  # 正文内容
                     if destination_file is None:
