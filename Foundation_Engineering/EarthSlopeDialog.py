@@ -1,15 +1,12 @@
 #土方边坡计算对话框
 import sys
 import uuid
-import pickle
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QRadioButton, \
-    QPushButton, QGraphicsView, QGraphicsScene, QLabel, QFormLayout, QComboBox, QSplitter, QWidget, QMessageBox
+    QLabel, QFormLayout, QComboBox, QSplitter, QWidget, QMessageBox
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPen, QPainter, QPixmap
 from DrawGraphinsScene.DrawSharpPic_EarthSlope import MultipleViewports as DrawArea  # 自己绘制绘图区域
-from DataStruDef.EarthSlopeCalculation import SlopeCalculationData as Scdata, VerificationProject, \
+from DataStruDef.EarthSlopeCalculation import  VerificationProject, \
     SlopeTopLoad, BasicParameters, SlopeCalculationData  # 边坡计算数据
-from DataStruDef.CalculateType import ConstructionCalculationType as Caltype
 #存储的类型 对话框的1-uuid,2-验算项目类型 3-坡顶作用荷载， 基本参数：4-坑壁土类型、5-土的重度、6-土的内摩擦角、7-土粘聚力、8-边坡的坡度角
 class EarthSlopeDialog(QDialog):
     def __init__(self,para_uuid=None,para_slopeCalculationData=None):#默认的参数给init初始化函数
