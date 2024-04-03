@@ -26,7 +26,7 @@ class DrawingWidget(QGraphicsView):
         # 获取当前文件的目录
         current_directory = os.path.dirname(__file__)
         # 构建图片的绝对路径
-        image_path = os.path.join(current_directory, '../DrawGraphinsScene/slope.png')
+        image_path = os.path.join(current_directory, '../DrawGraphinsScene/slope-testremote.png')
         # 加载一张图片
         pixmap = QPixmap(image_path)
         # 创建一个QGraphicsPixmapItem对象
@@ -118,7 +118,7 @@ class MultipleViewports(QMainWindow):
         self.tab3 = DrawingWidget()
 
         # 加载每个 DrawingWidget 的不同图片
-        self.tab1.loadImage('slope.png')
+        self.tab1.loadImage('slope-testremote.png')
         #self.tab2.loadImage('slope1.png')
         #self.tab3.loadImage('slope2.png')
 
