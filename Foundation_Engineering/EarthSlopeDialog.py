@@ -217,6 +217,7 @@ class EarthSlopeDialog(QDialog):
         # 当控件的参数被修改时，将IsSave设置为False
         self.IsSave = False
     #坡顶作用荷载参数合理性检查
+
     def checkTopLoad(self):
         try:
             top_load = float(self.load_input1.text())
