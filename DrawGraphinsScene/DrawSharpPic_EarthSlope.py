@@ -33,7 +33,7 @@ class DrawingWidget(QGraphicsView):
         """
            加载并适配图像到场景中。
 
-           该函数从当前目录加载名为'slope-testremote.png'的图像，将其添加到图形场景中，并确保图像在场景中保持原始的宽高比进行适配显示。
+           该函数从当前目录加载名为'slope.png'的图像，将其添加到图形场景中，并确保图像在场景中保持原始的宽高比进行适配显示。
 
            参数:
            无
@@ -42,7 +42,7 @@ class DrawingWidget(QGraphicsView):
            无
            """
         current_directory = os.path.dirname(__file__)
-        image_path = os.path.join(current_directory, 'slope-testremote.png')
+        image_path = os.path.join(current_directory, 'slope.png')
         pixmap = QPixmap(image_path)
         pixmapItem = QGraphicsPixmapItem(pixmap)
         self.scene.addItem(pixmapItem)
@@ -165,7 +165,7 @@ class MultipleViewports(QMainWindow):
         self.initUI()
     def ChangeLoadImage(self,radioname):
         if radioname=="土方直立壁开挖深度计算":
-            self.tab1.loadImage('slope-testremote.png')
+            self.tab1.loadImage('slope.png')
         elif radioname=="基坑安全边坡计算":
             self.tab1.loadImage('slope_2.png')
     def initUI(self):
@@ -179,7 +179,7 @@ class MultipleViewports(QMainWindow):
         self.tab2 = DrawingWidget()
         self.tab3 = DrawingWidget()
 
-        self.tab1.loadImage('slope-testremote.png')
+        self.tab1.loadImage('slope.png')
 
         self.tabs.addTab(self.tab1, "示意图")
 

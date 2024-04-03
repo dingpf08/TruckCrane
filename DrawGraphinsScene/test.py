@@ -23,7 +23,7 @@ class DrawingWidget(QGraphicsView):
 
     def loadAndFitImage(self):
         current_directory = os.path.dirname(__file__)
-        image_path = os.path.join(current_directory, 'slope-testremote.png')
+        image_path = os.path.join(current_directory, 'slope.png')
         pixmap = QPixmap(image_path)
         pixmapItem = QGraphicsPixmapItem(pixmap)
         self.scene.addItem(pixmapItem)
@@ -93,7 +93,7 @@ class MultipleViewports(QMainWindow):
         self.tab2 = DrawingWidget()
         self.tab3 = DrawingWidget()
 
-        self.tab1.loadImage('slope-testremote.png')
+        self.tab1.loadImage('slope.png')
 
         self.tabs.addTab(self.tab1, "示意图")
 
