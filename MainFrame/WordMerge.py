@@ -18,7 +18,6 @@ class WordDocumentMerger:
         # QMessageBox.information(None, '未打包之前word文档所在的根目录为：', current_working_directory)
         print(f"未打包之前的根目录为：{current_working_directory}")  # D:\Cache\ztzp-ttms\MainFrame
         self.template_path = "D:\Cache\ztzp-ConCaSys\WordTemplate\样式1.dotx"  # Word 模板的路径
-
         # 设置 Word 不显示警告
         self.word.DisplayAlerts = False
         # 如果输出文件已存在，则删除其中的内容，重新填入内容
