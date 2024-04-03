@@ -170,7 +170,6 @@ class EarthSlopeDialog(QDialog):
         #返回对话框的uuid
     def Getuuid(self):
         return self.uuid
-
     #切换“土方直立壁开挖深度计算”和“基坑安全边坡计算”
     def on_radio_clicked(self):
         radio_button = self.sender()#在Qt框架（和PyQt）中，
