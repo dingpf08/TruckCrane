@@ -1,4 +1,4 @@
-#土方边坡计算数据结构
+#土方边坡计算数据结构--
 from DataStruDef.CalculateType import ConstructionCalculationType as ConCalType#计算类型
 #from CalculateType import ConstructionCalculationType as ConCalType#计算类型  这样子不对 不太理解
 class VerificationProject:
