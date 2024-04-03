@@ -1,0 +1,24 @@
+pip install -r requirements.txt 是一个在 Python 开发中常用的命令，用于安装一个项目所需的所有依赖包。这个命令中的 -r 参数代表 "requirement"，即 "需求" 或 "依赖"，而 requirements.txt 是一个标准的文件名，用于存储项目所需的所有依赖包及其准确的版本号。这样做的目的是确保在不同环境中部署项目时，所有的依赖包都保持一致，从而避免了因版本不同造成的问题。
+
+requirements.txt 文件的结构
+这个文件通常包含一个或多个行，每行指定一个依赖包和可能的版本号。例如：
+
+makefile
+Copy code
+flask==1.1.2
+requests>=2.23.0
+numpy
+在这个例子中：
+
+第一行 flask==1.1.2 指定了 Flask 包的准确版本是 1.1.2。
+第二行 requests>=2.23.0 表示 requests 包的版本必须等于或高于 2.23.0。
+第三行 numpy 指出项目需要 numpy 包，但没有指定版本，这意味着 pip 会安装最新版本的 numpy。
+如何生成 requirements.txt 文件
+通常，开发者会在项目开发过程中使用 pip freeze 命令来生成这个文件。pip freeze 会列出当前环境中安装的所有包及其版本号。你可以通过重定向输出到 requirements.txt 文件来创建或更新它：
+
+bash
+Copy code
+pip freeze > requirements.txt
+这样，当其他人或者自动化部署脚本需要设置相同的环境时，只需使用 pip install -r requirements.txt 命令，pip 就会从这个文件读取依赖列表，并安装所有列出的包和版本。
+
+使用 requirements.txt 是 Python 项目中常见的最佳实践，有助于确保代码的可移植性和一致性。
