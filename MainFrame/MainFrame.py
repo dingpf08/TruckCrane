@@ -80,14 +80,23 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.m_ECST)
         # 左侧添加浮动窗口
         self.addDockWidget(Qt.LeftDockWidgetArea, self.m_CalDock)
+
     def SaveBeforeClose(self):
         reply = QMessageBox.question(self, '请选择下一步操作', '是否保存当前工程？',
                                      QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
+            default_file_name = "Pro.ZtzpCCS"
+            # 构建当前用户桌面的路径
+            initial_directory = desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+            default_save_path =None
+            if initial_directory is not None and default_file_name is not None:
+                default_save_path = os.path.join(initial_directory, default_file_name)
+            else:
+                print("错误：initial_directory 或 default_file_name 之一为 None。")
             # 用户选择了保存数据，弹出文件保存对话框让用户选择保存位置
             file_name, _ = QFileDialog.getSaveFileName(
-                self, "保存文件", os.getenv('HOME'), "ZtzpCCS Files (*.ZtzpCCS)")
+                self, "保存文件", default_save_path, "ZtzpCCS Files (*.ZtzpCCS)")
             if file_name:
                 if not file_name.endswith('.ZtzpCCS'):  # 序列化的文件后缀为ZtzpCCS
                     file_name += '.ZtzpCCS'
