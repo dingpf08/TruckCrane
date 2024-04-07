@@ -1,5 +1,5 @@
 from enum import Enum
-#测试
+#测试提交
 #添加施工软件的计算类型，所有计算类型用同一个枚举值
 class ConstructionCalculationType(Enum):
     SOIL_EMBANKMENT_CALCULATION = 1  # 土方边坡计算
