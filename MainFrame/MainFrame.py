@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
             # 构建当前用户桌面的路径
             initial_directory = desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
             default_save_path =None
+
             #
             if initial_directory is not None and default_file_name is not None:
                 default_save_path = os.path.join(initial_directory, default_file_name)
