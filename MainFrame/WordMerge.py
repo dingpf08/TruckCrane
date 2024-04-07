@@ -1,7 +1,7 @@
 import os
 import sys
 import win32com.client as win32
-
+#修改了
 
 # 合并多个word文档，应用模板里面的设置
 class WordDocumentMerger:
