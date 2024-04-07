@@ -137,6 +137,7 @@ class CalculateDockWidget(QDockWidget):
                     Hmax_rounded = round(Hmax, 2)  # 保留两位小数
                     # 输出试算结果
                     #注释
+
                     print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
                     #region 输出计算结果到word文档
                     # 调用函数并获取用户选择的文件夹路径
