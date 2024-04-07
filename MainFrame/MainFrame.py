@@ -85,11 +85,14 @@ class MainWindow(QMainWindow):
         reply = QMessageBox.question(self, '请选择下一步操作', '是否保存当前工程？',
                                      QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.No)
 
+
         if reply == QMessageBox.Yes:
             default_file_name = "Pro.ZtzpCCS"
+            # 获取当前用户的桌面路径
             # 构建当前用户桌面的路径
             initial_directory = desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
             default_save_path =None
+            #
             if initial_directory is not None and default_file_name is not None:
                 default_save_path = os.path.join(initial_directory, default_file_name)
             else:
