@@ -68,6 +68,7 @@ class WordDocumentMerger:
     def Set_Doc_Content(self, Content):
         self.Doc_Content = Content
     def Type_Doc_Content(self):
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
         self.word.Selection.EndKey(6)  # 6 表示移动到文档末尾
         self.word.Selection.TypeText(self.Doc_Content)  # 在这里替换为你的标题文本
         self.word.Selection.Style = self.word.ActiveDocument.Styles("正文")  # 设置为一级标题的样式
@@ -183,6 +184,30 @@ class WordDocumentMerger:
             self.word.Selection.TypeParagraph()
         except Exception as e:
             print(f"Error inserting image '{image_path}': {e}")
+
+    def insert_formula(self, formula_text,  font_size=None,font_name=None):
+        """
+        在Word文档中插入一个公式。
+        Args:
+            formula_text (str): 公式的文本表示。
+        """
+        try:
+            # 使用 Range 对象指定公式插入的位置
+            # 获取当前光标位置
+            selection = self.word.Selection
+            range = selection.Range
+            # 使用 OMaths 集合插入公式
+            formula = range.OMaths.Add(range)
+            formula.OMaths(1).Range.Text = formula_text
+            formula.OMaths.BuildUp()  # 构建公式的显示格式
+            # 设置公式字体和大小
+            if font_name:
+                formula.OMaths(1).Range.Font.Name = font_name
+            if font_size:
+                formula.OMaths(1).Range.Font.Size = font_size
+
+        except Exception as e:
+            print(f"Error inserting formula '{formula_text}': {e}")
 
 def main():
     root_directory = r"D:\Cache\ztzp-ConCaSys\WordTemplate"

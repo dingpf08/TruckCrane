@@ -113,6 +113,7 @@ class CalculateDockWidget(QDockWidget):
                 print("还没有要计算的数据")
                 return
             conCalType = currentdata.conCalType
+
             if conCalType == CCType.SOIL_EMBANKMENT_CALCULATION:  # 土方边坡计算
                 print("开始土方边坡计算")
                 if currentdata.verification_project.project_type == "土方直立壁开挖深度计算":
@@ -128,8 +129,9 @@ class CalculateDockWidget(QDockWidget):
                     # 将角度转换为弧度
                     soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
                     γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
-                    slope_angle_in_degrees = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角
-                    slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)
+
+                    slope_angle_in_degrees = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角 角度
+                    slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)# 坑壁土的内摩擦角 弧度
                     c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
                     q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
                     k = 1.25  # K - -安全系数（一般用1.25 ）
@@ -137,7 +139,6 @@ class CalculateDockWidget(QDockWidget):
                     Hmax_rounded = round(Hmax, 2)  # 保留两位小数
                     # 输出试算结果
                     #注释
-
                     print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
                     #region 输出计算结果到word文档
                     # 调用函数并获取用户选择的文件夹路径
@@ -150,6 +151,10 @@ class CalculateDockWidget(QDockWidget):
                         return
                     merger = WordMer(destination_file,output_filename )
                     merger.Set_Main_Title("土方直立壁开挖深度计算")
+                    #region
+                    doc=merger.output_doc
+                    #endregion
+
                     merger.Type_Main_Title()
                     content="计算依据：\n" \
                             "1、《建筑基坑支护技术规程》JGJ120 - 2012\n" \
@@ -187,13 +192,18 @@ class CalculateDockWidget(QDockWidget):
                             \nK - -安全系数（一般用1.25 ）"
                     merger.Set_Doc_Content(content)
                     merger.Type_Doc_Content()
-                    content = (
-                        f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
-                        f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
-                    )
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
-                    content = f"本工程的基坑土方立直壁最大开挖高度为{Hmax:.2f}m。"
+
+                    # 添加公式
+                    formula_text = f"Hmax = (2*{c})/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
+                    merger.insert_formula(formula_text)
+
+                    #content = (
+                    #    f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
+                    #   f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
+                    # )
+                    #merger.Set_Doc_Content(content)
+                    #merger.Type_Doc_Content()
+                    content = f"\n本工程的基坑土方立直壁最大开挖高度为{Hmax:.2f}m。"
                     merger.Set_Doc_Content(content)
                     merger.Type_Doc_Content()
                     merger.insert_image(r"D:\Cache\ztzp-ConCaSys\DrawGraphinsScene\slope - word.png")#插入图片
@@ -271,6 +281,7 @@ class CalculateDockWidget(QDockWidget):
                         content =f"θ={θ}>φ={φ}，c≠0为陡坡。\n" \
                                  f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n" \
                                  f"土坡允许最大高度为{Hight_rounded}m\n"
+
                     elif (θ-φ>0) and(c == 0):
                         content = f"θ={θ}>φ={φ}，c=0。\n" \
                                   "挖方边坡任何高度都不稳定\n"
@@ -281,6 +292,7 @@ class CalculateDockWidget(QDockWidget):
                         content = f"θ={θ}<φ={φ}，为缓坡。\n" \
                                   f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n"\
                                   f"土坡允许最大高度为{Hight_rounded}m\n"
+
                     merger.Set_Doc_Content(content)
                     merger.Type_Doc_Content()
                     merger.insert_image(r"D:\Cache\ztzp-ConCaSys\DrawGraphinsScene\slope_2 - word.png")  # 插入图片
