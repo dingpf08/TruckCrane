@@ -138,8 +138,9 @@ class CalculateDockWidget(QDockWidget):
                     Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
                     Hmax_rounded = round(Hmax, 2)  # 保留两位小数
                     # 输出试算结果
-                    #注释
+                    #注释Ω
                     print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
+
                     #region 输出计算结果到word文档
                     # 调用函数并获取用户选择的文件夹路径
                     #destination_file = self.select_destination_folder()
@@ -194,7 +195,9 @@ class CalculateDockWidget(QDockWidget):
                     merger.Type_Doc_Content()
 
                     # 添加公式
-                    formula_text = f"Hmax = (2*{c})/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
+                    formula_text = f"Hmax = (2*{c}*β)/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
+                    # 将根号符号替换为带有上方一横的Unicode字符
+
                     merger.insert_formula(formula_text)
 
                     #content = (
