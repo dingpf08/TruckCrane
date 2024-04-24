@@ -198,8 +198,48 @@ class WordDocumentMerger:
             range = selection.Range
             # 使用 OMaths 集合插入公式
             formula = range.OMaths.Add(range)
-            formula.OMaths(1).Range.Text = formula_text
+
+            # 将公式文本包裹在正确的OMML标记中
+            # 注意，此处使用了 Word 公式编辑器的语法
+            formula_text_with_root = f"\\sqrt({formula_text})"
+            formula.OMaths(1).Range.Text = formula_text_with_root
+            #formula.OMaths(1).Range.Text = formula_text
             formula.OMaths.BuildUp()  # 构建公式的显示格式
+            # 设置公式字体和大小
+            if font_name:
+                formula.OMaths(1).Range.Font.Name = font_name
+            if font_size:
+                formula.OMaths(1).Range.Font.Size = font_size
+        except Exception as e:
+            print(f"Error inserting formula '{formula_text}': {e}")
+
+    def insert_formula(self, c, k, gamma, slope_angle_in_degrees, q, Hmax, font_size=None, font_name=None):
+        """
+        在Word文档中插入一个根号公式。
+        Args:
+            c (float): 公式中的 c 值
+            k (float): 公式中的 k 值
+            gamma (float): 公式中的 γ 值
+            slope_angle_in_degrees (float): 斜坡角度（以度为单位）
+            q (float): 公式中的 q 值
+            Hmax (float): 计算出的 Hmax 值
+        """
+        try:
+            # 使用 Range 对象指定公式插入的位置
+            # 获取当前光标位置
+            selection = self.word.Selection
+            range = selection.Range
+            # 使用 OMaths 集合插入公式
+            formula = range.OMaths.Add(range)
+
+            # 构造整个公式字符串，并将其放在根号下
+            formula_text = f"(Hmax =(2*{c})/({k}*{gamma}*tan(45° - {slope_angle_in_degrees}^° )-{q}/{gamma})"
+            result_text = f"={Hmax:.2f}m"
+            formula_text_with_root = f"\\sqrt({formula_text}{result_text})"
+
+            formula.OMaths(1).Range.Text = formula_text_with_root
+            formula.OMaths.BuildUp()  # 构建公式的显示格式
+
             # 设置公式字体和大小
             if font_name:
                 formula.OMaths(1).Range.Font.Name = font_name
@@ -207,7 +247,8 @@ class WordDocumentMerger:
                 formula.OMaths(1).Range.Font.Size = font_size
 
         except Exception as e:
-            print(f"Error inserting formula '{formula_text}': {e}")
+            print(f"Error inserting formula: {e}")
+
 
 def main():
     root_directory = r"D:\Cache\ztzp-ConCaSys\WordTemplate"

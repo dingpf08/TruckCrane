@@ -195,11 +195,11 @@ class CalculateDockWidget(QDockWidget):
                     merger.Type_Doc_Content()
 
                     # 添加公式
-                    formula_text = f"Hmax = (2*{c}*β)/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
+                    formula_text = f"Hmax = (2*{c})/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
                     # 将根号符号替换为带有上方一横的Unicode字符
 
-                    merger.insert_formula(formula_text)
-
+                    #merger.insert_formula(formula_text)
+                    merger.insert_formula(c,k,γ, slope_angle_in_degrees, q, Hmax)
                     #content = (
                     #    f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
                     #   f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
