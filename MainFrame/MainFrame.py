@@ -2,13 +2,14 @@ import os
 import sys
 ##
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog, QDialog, QTreeWidget, QTreeWidgetItem, QVBoxLayout
 #主对话框，组织所有其它控件和对话框
 from Dock_Widget import CalculateDockWidget
 from Menu_Bar  import ECSMenuBar
 from Tool_Bar import ToolBar
 from Table_Bar import ECSTabWidget
 from Status_Bar import StatusBar
+from HydraulicCraneDialog import HydraulicCraneDialog  # 导入HydraulicCraneDialog
 #这个变量self.m_dialog_data_map = {}在self.m_ECST标签页，self.m_CalDock项目树，self.m_toolbar工具栏都是同一个变量，在从工具栏打开文件的时候，其它位置的数据同步更新
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -120,6 +121,45 @@ class MainWindow(QMainWindow):
             event.accept()  # 允许退出
         else:
             event.ignore()  # 取消退出
+
+class Hoisting_CalculateTreeDialog(QDialog):
+    def __init__(self, mainWindow=None):
+        super().__init__(mainWindow, Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+        self.m_MainWindow = mainWindow
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("起重吊装计算合集")
+        layout = QVBoxLayout(self)
+        self.tree_widget = QTreeWidget()
+        self.tree_widget.setHeaderHidden(True)
+        self.root_item = QTreeWidgetItem(self.tree_widget)
+        self.root_item.setText(0, "起重吊装")
+
+        self.child_item1 = QTreeWidgetItem(self.root_item)
+        self.child_item1.setText(0, "液压汽车起重机吊装计算")
+
+        self.child_item2 = QTreeWidgetItem(self.root_item)
+        self.child_item2.setText(0, "履带式起重机吊装计算")
+
+        self.tree_widget.expandAll()
+        self.tree_widget.itemDoubleClicked.connect(self.onItemDoubleClicked)
+
+        layout.addWidget(self.tree_widget)
+        self.setLayout(layout)
+
+    def onItemDoubleClicked(self, item, column):
+        itemtext = item.text(0)
+        if itemtext == "液压汽车起重机吊装计算":
+            print("双击：液压汽车起重机吊装计算")
+            self.hide()
+            parent = self.parent()
+            if parent:
+                dialog = HydraulicCraneDialog(parent)
+                uuid = dialog.winId()  # 使用窗口ID作为唯一标识
+                index = parent.AddNewLable(itemtext, dialog, str(uuid))
+                print(f"标签页的id为：{index}")
+                # parent.setCurrentIndex(index)  # 显示当前的标签页
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
