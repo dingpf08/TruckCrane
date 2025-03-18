@@ -7,7 +7,8 @@ from PyQt5.QtGui import QIcon, QPixmap, QBrush
 from PyQt5.QtCore import QSize, Qt
 #自定义对话框
 from Tab2_Foundation import Foundation_CalculateTreeDialog as FounCal
-#首页：“模块选择”对应的标签页对话框，对话框的背景为一张纯色的图片
+from Tab2_Hoisting import Hoisting_CalculateTreeDialog as HoistCal
+#首页："模块选择"对应的标签页对话框，对话框的背景为一张纯色的图片
 class EngineerFuctionSelPage(QDialog):
     def __init__(self,parent=None):
         super(EngineerFuctionSelPage, self).__init__(parent)
@@ -34,6 +35,7 @@ class EngineerFuctionSelPage(QDialog):
             ('EngnieeringDialog\icon3.png', '钢结构工程'),
             ('EngnieeringDialog\icon4.png', '混凝土工程'),
             ('EngnieeringDialog\icon5.png', '平法施工'),
+            ('EngnieeringDialog\icon6.png', '起重吊装'),
         ]
         # 创建按钮并添加到布局中
         for i, (icon_path, label_text) in enumerate(buttons_info):
@@ -76,6 +78,7 @@ class EngineerFuctionSelPage(QDialog):
             print("没有找到父对话框")
         #初始化各种选择对话框
         self.m_Fcalsel = FounCal(parent)  # 基坑工程选择对话框的父类为标签页，标签页的父类为主对话框
+        self.m_Hcalsel = HoistCal(parent)  # 起重吊装选择对话框
     #选择页面没有参数
     def updateCalculationData(self):
         return None
@@ -96,6 +99,9 @@ class EngineerFuctionSelPage(QDialog):
             print("混凝土工程")
         elif text == "平法施工":
             print("平法施工")
+        elif text == "起重吊装":
+            self.m_Hcalsel.exec_()
+            print("起重吊装")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
