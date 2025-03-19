@@ -9,7 +9,7 @@ from Menu_Bar  import ECSMenuBar
 from Tool_Bar import ToolBar
 from Table_Bar import ECSTabWidget
 from Status_Bar import StatusBar
-from HydraulicCraneDialog import HydraulicCraneDialog  # 导入HydraulicCraneDialog
+from Hoisting_Engineering.HydraulicCraneDialog import HydraulicCraneDialog  # 导入HydraulicCraneDialog
 #这个变量self.m_dialog_data_map = {}在self.m_ECST标签页，self.m_CalDock项目树，self.m_toolbar工具栏都是同一个变量，在从工具栏打开文件的时候，其它位置的数据同步更新
 class MainWindow(QMainWindow):
     def __init__(self):
