@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QBrush
 from PyQt5.QtCore import QSize, Qt
 #自定义对话框
 from Tab2_Foundation import Foundation_CalculateTreeDialog as FounCal
-from Tab2_Hoisting import Hoisting_CalculateTreeDialog as HoistCal
+from Tab6_Hoisting import Hoisting_CalculateTreeDialog as HoistCal
 #首页："模块选择"对应的标签页对话框，对话框的背景为一张纯色的图片
 class EngineerFuctionSelPage(QDialog):
     def __init__(self,parent=None):
