@@ -5,7 +5,7 @@ import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QDialog, QTreeWidget, QTreeWidgetItem, QVBoxLayout
-from Dock_Widget import CalculateDockWidget as CD  #左侧的项目树
+
 
 #起重吊装计算选择对话框
 class Hoisting_CalculateTreeDialog(QDialog):
