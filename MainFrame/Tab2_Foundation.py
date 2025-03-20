@@ -6,7 +6,6 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QDialog, QTreeWidget, QTreeWidgetItem, QVBoxLayout
 from Foundation_Engineering.EarthSlopeDialog import EarthSlopeDialog as ES    #边坡界面
-from Dock_Widget import CalculateDockWidget as CD#左侧的项目树
 #基坑工程计算选择对话框
 class Foundation_CalculateTreeDialog(QDialog):
     def __init__(self,mainWindow=None):
@@ -50,12 +49,12 @@ class Foundation_CalculateTreeDialog(QDialog):
             print("双击传入：土方边坡计算")
             self.hide()
             parent=self.parent()#Table_Bar.py中的class ECSTabWidget(QTabWidget):
-            print(f"父对话框为：{parent.windowTitle()}")
             if parent:
+                print(f"父对话框为----：{parent.windowTitle()}-----")
                 es = ES()  # 边坡绘制区域
+                print(f"基坑工程打开的对话框名字为：{es.windowTitle()}")
                 uuid=es.Getuuid()#获取边坡绘制对话框的uuid
                 struuid=str(uuid)#边坡对话框的uuid：文字格式
-
                 index=parent.AddNewLable(itemtext,es,struuid)#给上面添加标签页
                 print(f"标签页的id为：{index}")
                 #parent.setCurrentIndex(index)#显示当前的标签页

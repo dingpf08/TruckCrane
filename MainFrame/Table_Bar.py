@@ -1,5 +1,5 @@
+#标签页，管理各种对话框
 import pickle
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication, \
     QMessageBox, QMainWindow
@@ -11,7 +11,6 @@ from Tab1_SelectMajorInterface import  EngineerFuctionSelPage as EFSP
 from DataStruDef.CalculateType import ConstructionCalculationType as Conct#对话框类型
 
 #序列化文件的后缀为ZtzpCCS
-#标签页，管理各种对话框
 #这里还会存储新建的计算工程对话框实例和对应的uuid，和左侧项目树共用同一个uuid
 #每个标签页都添加一个uuid，tab.setProperty("uuid", struuid)
 class ECSTabWidget(QTabWidget):
@@ -142,7 +141,7 @@ class ECSTabWidget(QTabWidget):
     #region 初始化函数
     def init_ui(self):
         # 标签1
-        efsp=EFSP(self)#模块选择
+        efsp=EFSP(self)#模块选择对话框
         struuid=str(efsp.uuid)#模块的uuid
         self.AddNewLable("模块选择",efsp,struuid )#添加第一个标签页
         #self.setStyleSheet("background-color: lightblue;")#标签页的背景颜色
@@ -256,6 +255,7 @@ class ECSTabWidget(QTabWidget):
         #如果如果self.uuid_list没有对应的uuid，添加对应的标签页和对话框，对话框从self.m_dialog_uuid_map.get(struuid)获取
         if isinstance(dialog, QWidget):
             if struuid in self.uuid_set:#显示的对话框中有这个元素
+                print(f"Table已经添加了ID为：{struuid}，名字为{strName}的对话框")
                 # 根据uuid查找对应的对话框
                 dialog = self.m_dialog_uuid_map.get(struuid)
                 if dialog is not None:
@@ -267,6 +267,7 @@ class ECSTabWidget(QTabWidget):
                     return
                 #让tab页面切换到对应的对话框
             else:#显示的页面没有这个对话框
+                print(f"Table未添加ID为：{struuid}，名字为：{strName}的对话框")
                 tab = QWidget()#定义一个标签
                 tab.setProperty("uuid", struuid)#给标签设置uuid属性
                 tab_layout = QVBoxLayout()#定义一个竖直的布局

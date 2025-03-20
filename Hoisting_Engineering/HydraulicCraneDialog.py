@@ -1,88 +1,98 @@
+#液压汽车起重机吊装计算界面
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QRadioButton, QGroupBox, QComboBox, QGridLayout
+    QRadioButton, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox
 )
 import sys
-
+import uuid
+from PyQt5.QtCore import Qt
+# para_uuid:
+# 类型：UUID 或 None
+# 作用：用于唯一标识对话框实例。如果没有提供，则在初始化时生成一个新的UUID。这在需要跟踪多个对话框实例时非常有用。
+# para_craneData:
+# 类型：字典或 None
+# 作用：包含吊装计算所需的初始数据。如果没有提供，则使用默认值初始化。字典中的键值对包括：
+# "load_capacity": 吊装能力，以吨为单位。
+# "boom_length": 吊臂长度，以米为单位。
+# "working_radius": 工作半径，以米为单位。#
 class HydraulicCraneDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("液压汽车起重机吊装计算")
-        self.setGeometry(100, 100, 400, 300)
+    def __init__(self, para_uuid=None, para_craneData=None):
+        super().__init__()
+        self.m_name = "液压汽车起重机吊装计算对话框"
+
+        self.uuid = None  # 能够唯一定位对话框的符号
+        self.crane_data = None  # 吊装数据
+        self.IsSave = True  # 是否保存
+
+        if para_uuid is None:
+            self.uuid = uuid.uuid4()  # 生成一个唯一的UUID
+            print(f"自动生成的uuid为：汽车吊界面的uuid为：{str(self.uuid)}")
+        else:
+            self.uuid = para_uuid
+            print(f"传入的uuid为：汽车吊界面的uuid为：{str(self.uuid)}")
+        if para_craneData is None:
+            # 初始化默认的吊装数据
+            self.crane_data = {
+                "load_capacity": 30.0,  # 吊装能力
+                "boom_length": 50.0,  # 吊臂长度
+                "working_radius": 20.0  # 工作半径
+            }
+            print(f"自己初始化参数：初始化的吊装数据: 吊装能力: {self.crane_data['load_capacity']}吨, 吊臂长度: {self.crane_data['boom_length']}米, 工作半径: {self.crane_data['working_radius']}米")
+        else:
+            self.crane_data = para_craneData#汽车吊的参数
+            print(f"外面传入的参数：自己初始化参数：初始化的吊装数据: 吊装能力: {self.crane_data['load_capacity']}吨, 吊臂长度: {self.crane_data['boom_length']}米, 工作半径: {self.crane_data['working_radius']}米")
+
+        print(f"初始化的吊装数据: 吊装能力: {self.crane_data['load_capacity']}吨, 吊臂长度: {self.crane_data['boom_length']}米, 工作半径: {self.crane_data['working_radius']}米")
+
         self.initUI()
 
+    def updateCraneData(self):
+        """根据当前的对话框内容更新吊装数据。"""
+        self.crane_data["load_capacity"] = float(self.load_capacity_input.text())
+        self.crane_data["boom_length"] = float(self.boom_length_input.text())
+        self.crane_data["working_radius"] = float(self.working_radius_input.text())
+        return self.crane_data
+
     def initUI(self):
-        layout = QVBoxLayout()
+        self.setWindowTitle('液压汽车起重机吊装计算')
+        self.setGeometry(100, 100, 800, 600)  # 设置对话框的初始大小
 
-        # 吊重和起吊力系数
-        weight_layout = QHBoxLayout()
-        weight_label = QLabel("吊重GW (吨):")
-        weight_input = QLineEdit()
-        weight_input.setText("30")
-        weight_layout.addWidget(weight_label)
-        weight_layout.addWidget(weight_input)
+        main_layout = QVBoxLayout()
 
-        factor_label = QLabel("起吊力系数K:")
-        factor_input = QLineEdit()
-        factor_input.setText("1.2")
-        weight_layout.addWidget(factor_label)
-        weight_layout.addWidget(factor_input)
+        # 吊装参数区域
+        crane_group = QGroupBox("吊装参数")
+        crane_layout = QFormLayout()
 
-        layout.addLayout(weight_layout)
+        self.load_capacity_input = QLineEdit()
+        self.load_capacity_input.setText(str(self.crane_data["load_capacity"]))
+        self.load_capacity_input.textChanged.connect(self.markUnsavedChanges)
+        crane_layout.addRow(QLabel("吊装能力 (吨):"), self.load_capacity_input)
 
-        # 起重机选择
-        crane_group = QGroupBox("起重机选择")
-        crane_layout = QHBoxLayout()
-        smart_radio = QRadioButton("智能推荐起重机")
-        custom_radio = QRadioButton("自定义起重机")
-        crane_layout.addWidget(smart_radio)
-        crane_layout.addWidget(custom_radio)
+        self.boom_length_input = QLineEdit()
+        self.boom_length_input.setText(str(self.crane_data["boom_length"]))
+        self.boom_length_input.textChanged.connect(self.markUnsavedChanges)
+        crane_layout.addRow(QLabel("吊臂长度 (米):"), self.boom_length_input)
+
+        self.working_radius_input = QLineEdit()
+        self.working_radius_input.setText(str(self.crane_data["working_radius"]))
+        self.working_radius_input.textChanged.connect(self.markUnsavedChanges)
+        crane_layout.addRow(QLabel("工作半径 (米):"), self.working_radius_input)
+
         crane_group.setLayout(crane_layout)
+        main_layout.addWidget(crane_group)
 
-        layout.addWidget(crane_group)
+        self.setLayout(main_layout)
 
-        # 吊装要求
-        requirements_group = QGroupBox("吊装要求")
-        requirements_layout = QGridLayout()
+    def markUnsavedChanges(self):
+        """标记对话框内容已修改，未保存。"""
+        self.IsSave = False
 
-        max_height_label = QLabel("吊物顶距地面最大吊装高度h1 (m):")
-        max_height_input = QLineEdit()
-        max_height_input.setText("10")
-        requirements_layout.addWidget(max_height_label, 0, 0)
-        requirements_layout.addWidget(max_height_input, 0, 1)
+    def Getuuid(self):
+        """返回对话框的UUID。"""
+        return self.uuid
 
-        min_distance_label = QLabel("吊物顶距起重臂端部的最小距离h2 (m):")
-        min_distance_input = QLineEdit()
-        min_distance_input.setText("3")
-        requirements_layout.addWidget(min_distance_label, 1, 0)
-        requirements_layout.addWidget(min_distance_input, 1, 1)
-
-        method_label = QLabel("工作幅度确定方法:")
-        method_combo = QComboBox()
-        method_combo.addItems(["智能确定", "手动输入工作幅度"])
-        requirements_layout.addWidget(method_label, 2, 0)
-        requirements_layout.addWidget(method_combo, 2, 1)
-
-        layout.addWidget(requirements_group)
-        requirements_group.setLayout(requirements_layout)
-
-        # 安全距离复核
-        safety_group = QGroupBox("吊物与起重臂安全距离复核")
-        safety_layout = QGridLayout()
-
-        structure_label = QLabel("构件边缘与起重臂（起重臂中心线）中心的水平距离:")
-        structure_input = QLineEdit()
-        structure_input.setText("1")
-        safety_layout.addWidget(structure_label, 0, 0)
-        safety_layout.addWidget(structure_input, 0, 1)
-
-        safety_group.setLayout(safety_layout)
-        layout.addWidget(safety_group)
-
-        self.setLayout(layout)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    dialog = HydraulicCraneDialog()
-    dialog.show()
+    crane_dialog = HydraulicCraneDialog()
+    crane_dialog.show()
     sys.exit(app.exec_()) 
