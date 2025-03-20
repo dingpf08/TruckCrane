@@ -25,6 +25,8 @@ class EngineeringDataBase:
         """返回数据的描述"""
         return f"Engineering Data with Calculation Type: {self.conCalType.name}"
 
+
+
 # 示例用法
 if __name__ == "__main__":
     data = EngineeringDataBase()

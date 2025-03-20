@@ -81,31 +81,42 @@ class ECSTabWidget(QTabWidget):
         self.m_CurrentData=self.CurrentDialogData(index)
         print(f"结束CurrentDialogData")
         print(f"输出self.m_CurrentData：{self.m_CurrentData}")
-        if self.m_CurrentData is None:
-            print(f"m_CurrentData为空")
-            # 设计计算按钮可以用
-            paraentDialog = self.parent()
-            if paraentDialog:
-                # 如果父窗口对象存在，确保它是您期望的类型，例如 MainWindow
-                if isinstance(paraentDialog, QMainWindow):
-                    caldock = paraentDialog.m_CalDock
-                    if caldock:
-                         caldock.Set_ButtonEnable_Bytext("设计计算",False)
-        elif self.m_CurrentData.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:
-            print(f"地基计算数据类型")
-            #设计计算按钮可以用
-            paraentDialog=self.parent()
-            if paraentDialog:
-                # 如果父窗口对象存在，确保它是您期望的类型，例如 MainWindow
-                if isinstance(paraentDialog, QMainWindow):
-                    caldock=paraentDialog.m_CalDock
-                    if caldock:
-                        caldock.Set_ButtonEnable_Bytext("设计计算", True)
-        else:
-            print("其他类型")
+        self.handleCurrentData()
 
-
-
+    def handleCurrentData(self):
+        print(f"开始handleCurrentData")
+        try:
+            if self.m_CurrentData is None:
+                print("m_CurrentData is None")
+                # Design calculation button can be disabled
+                parentDialog = self.parent()
+                if parentDialog:
+                    print(f"Parent dialog exists: {type(parentDialog)}")
+                    # Ensure the parent is the expected type, e.g., MainWindow
+                    if isinstance(parentDialog, QMainWindow):
+                        caldock = parentDialog.m_CalDock
+                        if caldock:
+                            caldock.Set_ButtonEnable_Bytext("设计计算", False)
+            elif hasattr(self.m_CurrentData, 'conCalType'):
+                print(f"Current data type: {self.m_CurrentData.conCalType}")
+                if self.m_CurrentData.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:
+                    print("Foundation calculation data type")
+                    # Design calculation button can be enabled
+                    parentDialog = self.parent()
+                    if parentDialog:
+                        # Ensure the parent is the expected type, e.g., MainWindow
+                        if isinstance(parentDialog, QMainWindow):
+                            caldock = parentDialog.m_CalDock
+                            if caldock:
+                                caldock.Set_ButtonEnable_Bytext("设计计算", True)
+                else:
+                    print(f"Other calculation type: {self.m_CurrentData.conCalType}")
+            else:
+                print("m_CurrentData does not have conCalType attribute")
+        except Exception as e:
+            print(f"Error in handleCurrentData: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     def serialize_dialog_data_map(self, file_name):
         """将对话框数据字典序列化到指定的文件中。"""
@@ -235,7 +246,7 @@ class ECSTabWidget(QTabWidget):
                         self.removeTab(index)#移除标签页
                         dialog.IsSave=True#对话框是否已经保存为True
                         #更新数据库的数据
-                        print("用户选择了‘是’")
+                        print("用户选择了'是'")
                         #重新序列化话数据
                     elif retval == QMessageBox.No:
                         self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
@@ -243,10 +254,10 @@ class ECSTabWidget(QTabWidget):
                         #不保存对话框的当前数据，不更新数据库
                         dialog.IsSave = True
                         #不更新数据库的数据
-                        print("用户选择了‘否’")
+                        print("用户选择了'否'")
                     elif retval == QMessageBox.Cancel:
                         #返回对话框
-                        print("用户选择了‘取消’")
+                        print("用户选择了'取消'")
                 elif issave :#保存了
                     self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
                     # 1、获取对话框的数据
