@@ -195,7 +195,7 @@ class ECSTabWidget(QTabWidget):
         if action == close_action:#关闭标签页
             self.removeTabByIndexAnduuid(index,tab_uuid)
 
-        elif action==close_otheraction:#
+        elif action==close_otheraction:#关闭其他
             self.remove_other_tabs()
     #endregion 弹出右键菜单
     #移除table节点和节点与uuid的对应关系

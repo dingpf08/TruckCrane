@@ -9,7 +9,7 @@ class HydraulicCraneData(EngineeringDataBase):
     """
     def __init__(self, load_capacity=30.0, boom_length=50.0, working_radius=20.0):
         super().__init__()
-        self.conCalType = ConCalType.Hoisting_Lifting_CALCULATION_TruckCrane
+        self.conCalType = ConCalType.Hoisting_Lifting_CALCULATION_TruckCrane#汽车吊
         self.caltypename = "液压汽车起重机吊装计算"  # 计算类型文字版
         # 添加验证项目
         self.verification_project = VerificationProject("液压汽车起重机吊装计算")

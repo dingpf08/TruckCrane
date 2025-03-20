@@ -25,7 +25,7 @@ class HydraulicCraneDialog(QDialog):
         self.crane_data = None  # 吊装数据
         self.IsSave = True  # 是否保存
         # Add verification project initialization
-        self.verification_project = VerificationProject("液压汽车起重机吊装计算")
+        self.verification_project = VerificationProject("液压汽车起重机吊装计算")#后续支持修改项目树节点的名称，目前还没有用到
 
         if para_uuid is None:
             self.uuid = uuid.uuid4()  # 生成一个唯一的UUID
