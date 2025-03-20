@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QStatusBar
 #状态栏
 class StatusBar(QStatusBar):
     def __init__(self, parent=None):
+        self.m_name="状态栏"
         super().__init__(parent)
         self.showMessage('状态栏')
 

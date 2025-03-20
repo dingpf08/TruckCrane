@@ -37,6 +37,7 @@ class EarthSlopeDialog(QDialog):
             self.slope_calculation_data =para_slopeCalculationData
         self.initUI()
     #获取界面参数并更新界面参数
+    #这个函数每个对话框都要相同
     def updateCalculationData(self):
         """根据当前的对话框内容更新计算数据。"""
         # 更新验算项目类型

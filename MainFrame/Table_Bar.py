@@ -1,4 +1,4 @@
-#标签页，管理各种对话框
+#标签页，管理地基、吊装、等等对话框
 import pickle
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel, QTextEdit, QListWidget, QMenu, QApplication, \
@@ -27,7 +27,9 @@ class ECSTabWidget(QTabWidget):
         self.init_ui()
         #获取当前标签页的
     def GetCurrentDialogData(self):
+        print(f"开始：GetCurrentDialogData")
         self.m_CurrentData=self.CurrentDialogData(self.m_index)
+        print(f"结束：GetCurrentDialogData")
         return self.m_CurrentData
     #切换标签页
     def CurrentDialogData(self,index):
@@ -36,23 +38,30 @@ class ECSTabWidget(QTabWidget):
         # 获取当前激活的标签页的UUID
         current_tab = self.widget(index)  # 获取当前选中的标签页对应的widget
         if current_tab:  # 检查是否获取到了标签页
+            print(f"当前标签页有效")
             uuid = current_tab.property("uuid")  # 获取这个标签页对应的UUID
+            print(f"当前标签页的UUID为：{str(uuid)}")
             if uuid:  # 数据保存了，且存储在self.m_dialog_data_map
+                print(f"uuid有效")
                 dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
+                print(f"dialog_instance有效")
                 if dialog_instance is None:
                     print(f"找不到UUID为 {uuid} 的对话框实例。")
                     return
+                print(f"开始获取dialog_data")
                 dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
+                print(f"结束获取dialog_data")
                 if dialog_data:
-                    print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
-                    self.m_CurrentData=dialog_data
+                    print(f"开始设置对话框数据 {dialog_data} ")
+                    self.m_CurrentData=dialog_data#不同的对话框这个类型是不一样的
+                    print(f"结束设置对话框数据 {dialog_data} ")
                     return dialog_data
             else:  # 数据还没有存储，没关系 从对话框钟直接获取
                 dialog_instance = self.m_dialog_uuid_map.get(uuid)  # 对话框实例
                 if dialog_instance is None:
                     print(f"找不到UUID为 {uuid} 的对话框实例。")
                     return
-                # 假设对话框实例有一个方法getCurrentData()来获取当前数据
+                # 假设对话框实例有一个方法updateCalculationData()来获取当前数据
                 dialog_data = dialog_instance.updateCalculationData()  # ABC(这个函数需要抽象出来)这个#==#函数需要每个对话框类都一样
                 if dialog_data is None:
                     print(f"对话框实例UUID为 {uuid} 无法提供当前数据。")
@@ -66,10 +75,14 @@ class ECSTabWidget(QTabWidget):
             print(f"没有找到标签页 {index} 对应的widget。")
 
     def onTabChanged(self, index):
-        print("切换标签页")
+        print(f"开始onTabChanged切换标签页，其索引值为{index}")
         self.m_index=index#设置当前标签页
+        print(f"开始CurrentDialogData")
         self.m_CurrentData=self.CurrentDialogData(index)
+        print(f"结束CurrentDialogData")
+        print(f"输出self.m_CurrentData：{self.m_CurrentData}")
         if self.m_CurrentData is None:
+            print(f"m_CurrentData为空")
             # 设计计算按钮可以用
             paraentDialog = self.parent()
             if paraentDialog:
@@ -79,6 +92,7 @@ class ECSTabWidget(QTabWidget):
                     if caldock:
                          caldock.Set_ButtonEnable_Bytext("设计计算",False)
         elif self.m_CurrentData.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:
+            print(f"地基计算数据类型")
             #设计计算按钮可以用
             paraentDialog=self.parent()
             if paraentDialog:
@@ -87,7 +101,8 @@ class ECSTabWidget(QTabWidget):
                     caldock=paraentDialog.m_CalDock
                     if caldock:
                         caldock.Set_ButtonEnable_Bytext("设计计算", True)
-
+        else:
+            print("其他类型")
 
 
 
@@ -253,6 +268,7 @@ class ECSTabWidget(QTabWidget):
         #移除标签页中的对话框，从self.uuid_list中移除对应的uuid
         #双击左侧项目树的节点：获取uuid，如果self.uuid_list中有对应的uuid，找到uuid对应的标签索引，显示这个索引
         #如果如果self.uuid_list没有对应的uuid，添加对应的标签页和对话框，对话框从self.m_dialog_uuid_map.get(struuid)获取
+        print(f"开始AddNewLable，对话框名字为{strName}，对话框uuid为：{struuid}")
         if isinstance(dialog, QWidget):
             if struuid in self.uuid_set:#显示的对话框中有这个元素
                 print(f"Table已经添加了ID为：{struuid}，名字为{strName}的对话框")
@@ -275,11 +291,18 @@ class ECSTabWidget(QTabWidget):
                 tab_layout.addWidget(tab_label)#竖向布局添加对应的对话框
                 tab.setLayout(tab_layout)#变迁添加对应的布局
                 index=self.addTab(tab, strName)#将标签添加到
+                print(f"标签页的ID为：{index}")
                 self.uuid_set.add(struuid)#给标签页添加对应的str_uuid
+                print(f"uuid_set添加了struuid：{struuid}")
                 self.m_dialog_uuid_map[struuid] = dialog  # 存储uuid和对应的对话框实例
+                print(f"m_dialog_uuid_map添加了dialog：{struuid}")
                 if index:
+                    print(f"新添加的标签页ID为：{index}")
                     self.m_index=index
+                    print(f"开始：设置{index}为当前的ID")
                     self.setCurrentIndex(index)  # 显示当前的标签页
+                    print(f"结束：设置{index}为当前的ID")
+        print(f"结束AddNewLable，对话框类型为：{type(dialog)}，对话框uuid为：{struuid}")
     # endregion 添加新的标签页
 
     # region 根据索引移除标签页

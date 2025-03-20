@@ -8,6 +8,7 @@ class ECSMenuBar(QMenuBar):
 
     def initUI(self):
         # 设置菜单栏的样式，调整高度
+        self.m_name="菜单栏"
         file_menu = self.addMenu('文件')
         edit_menu = self.addMenu('编辑')
         settings_menu = self.addMenu('设置')

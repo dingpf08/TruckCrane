@@ -46,6 +46,14 @@ class HydraulicCraneDialog(QDialog):
 
         self.initUI()
 
+    #这个函数每个对话框都要相同，否则程序会崩溃，因为是被设计到流程中的
+    def updateCalculationData(self):
+        """根据当前的对话框内容更新吊装数据。"""
+        self.crane_data["load_capacity"] = float(self.load_capacity_input.text())
+        self.crane_data["boom_length"] = float(self.boom_length_input.text())
+        self.crane_data["working_radius"] = float(self.working_radius_input.text())
+        return self.crane_data
+
     def updateCraneData(self):
         """根据当前的对话框内容更新吊装数据。"""
         self.crane_data["load_capacity"] = float(self.load_capacity_input.text())

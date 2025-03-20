@@ -12,6 +12,7 @@ class ToolBar(QToolBar):
         self.initUI()
 
     def initUI(self):
+        self.m_name = "工具栏"
         new_action = QAction('新建', self)
         open_action = QAction('打开', self)
         close_action = QAction('退出', self)

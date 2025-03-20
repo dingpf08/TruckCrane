@@ -16,6 +16,7 @@ class CalculateDockWidget(QDockWidget):
 
     def init_ui(self):
         # 使用QWidget作为停靠窗口的主内容
+        self.m_name = "侧边停靠栏"
         self.main_widget = QWidget()
         self.setWidget(self.main_widget)
 

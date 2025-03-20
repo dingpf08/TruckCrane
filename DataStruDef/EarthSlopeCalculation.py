@@ -1,6 +1,7 @@
 #土方边坡计算数据结构--
 from DataStruDef.CalculateType import ConstructionCalculationType as ConCalType#计算类型
 #from CalculateType import ConstructionCalculationType as ConCalType#计算类型  这样子不对 不太理解
+
 class VerificationProject:
     """
     验算项目选择类，用于存储用户选择的验算项目类型。
@@ -36,9 +37,12 @@ class SlopeCalculationData:
     """
     土方边坡计算数据类型，整合验算项目选择、坡顶作用荷载、基本土体物理参数。
     """
-    def __init__(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters,caltypename="土方边坡计算"):
-        self.caltypename=caltypename#计算类型文字版
-        self.conCalType=ConCalType.SOIL_EMBANKMENT_CALCULATION#ABC土方边坡计算
+    def __init__(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters, caltypename="土方边坡计算"):
+        # Import EngineeringDataBase locally to avoid circular import
+        from DataStruDef.EngineeringDataBase import EngineeringDataBase
+        super().__init__()  # Initialize the base class
+        self.caltypename = caltypename  # 计算类型文字版
+        self.conCalType = ConCalType.SOIL_EMBANKMENT_CALCULATION  # Set the calculation type
         # 验算项目
         self.verification_project = verification_project
         # 坡顶作用荷载
@@ -47,8 +51,7 @@ class SlopeCalculationData:
         self.basic_parameters = basic_parameters
 
     # 更新参数
-    def update(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad,
-               basic_parameters: BasicParameters):
+    def update(self, verification_project: VerificationProject, slope_top_load: SlopeTopLoad, basic_parameters: BasicParameters):
         """根据提供的新实例更新计算数据的状态。"""
         self.verification_project = verification_project
         self.slope_top_load = slope_top_load
