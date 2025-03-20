@@ -10,7 +10,13 @@ class ConstructionCalculationType(Enum):
     None_CalculationType=100#默认为空
     # endregion吊装计算
     # 可以继续添加其他施工软件计算类型
-
+class VerificationProject:
+    """
+    验算项目选择类，用于存储用户选择的验算项目类型。
+    """
+    def __init__(self, project_type: str):
+        # 验算项目类型，例如："土方直立壁开挖深度计算" 或 "基坑安全边坡计算"
+        self.project_type = project_type
 def main():
     for calc_type in ConstructionCalculationType:
         print(calc_type)

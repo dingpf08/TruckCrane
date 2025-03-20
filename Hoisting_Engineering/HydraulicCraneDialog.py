@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
 import sys
 import uuid
 from PyQt5.QtCore import Qt
+from DataStruDef.EarthSlopeCalculation import VerificationProject
 # para_uuid:
 # 类型：UUID 或 None
 # 作用：用于唯一标识对话框实例。如果没有提供，则在初始化时生成一个新的UUID。这在需要跟踪多个对话框实例时非常有用。
@@ -23,6 +24,8 @@ class HydraulicCraneDialog(QDialog):
         self.uuid = None  # 能够唯一定位对话框的符号
         self.crane_data = None  # 吊装数据
         self.IsSave = True  # 是否保存
+        # Add verification project initialization
+        self.verification_project = VerificationProject("液压汽车起重机吊装计算")
 
         if para_uuid is None:
             self.uuid = uuid.uuid4()  # 生成一个唯一的UUID

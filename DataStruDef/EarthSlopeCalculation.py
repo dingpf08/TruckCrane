@@ -1,14 +1,8 @@
 #土方边坡计算数据结构--
-from DataStruDef.CalculateType import ConstructionCalculationType as ConCalType#计算类型
+from DataStruDef.CalculateType import ConstructionCalculationType as ConCalType, VerificationProject  # 计算类型
 #from CalculateType import ConstructionCalculationType as ConCalType#计算类型  这样子不对 不太理解
 
-class VerificationProject:
-    """
-    验算项目选择类，用于存储用户选择的验算项目类型。
-    """
-    def __init__(self, project_type: str):
-        # 验算项目类型，例如："土方直立壁开挖深度计算" 或 "基坑安全边坡计算"
-        self.project_type = project_type
+
 class SlopeTopLoad:
     """
     坡顶作用荷载类，用于存储坡顶荷载相关参数。
