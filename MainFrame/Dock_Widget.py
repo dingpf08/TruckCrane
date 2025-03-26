@@ -1,5 +1,5 @@
 import sys
-
+import os
 from PyQt5.QtWidgets import QWidget, QDockWidget, QListWidget, QListWidgetItem, QApplication, QMainWindow, QFileDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton
@@ -104,207 +104,237 @@ class CalculateDockWidget(QDockWidget):
             print("用户没有选择文件夹路径。")
             return None
     def onDesignCalculationClicked(self, item):  # 设计计算
-        parent_dialog = self.parent()#MainWindow
-        # 检查是否真的有父窗口
-        if parent_dialog:  #
-            #获取tab窗口
-            Tab_dialog = parent_dialog.m_ECST#标签页
-            currentdata = Tab_dialog.GetCurrentDialogData()  # 获取到了当前选择的tab对话框的数据
-            if currentdata is None:
-                print("还没有要计算的数据")
-                return
-            conCalType = currentdata.conCalType
+        try:
+            parent_dialog = self.parent()#MainWindow
+            # 检查是否真的有父窗口
+            if parent_dialog:  #
+                #获取tab窗口
+                Tab_dialog = parent_dialog.m_ECST#标签页
+                currentdata = Tab_dialog.GetCurrentDialogData()  # 获取到了当前选择的tab对话框的数据
+                if currentdata is None:
+                    print("还没有要计算的数据")
+                    return
+                conCalType = currentdata.conCalType
 
-            if conCalType == CCType.SOIL_EMBANKMENT_CALCULATION:  # 土方边坡计算
-                print("开始土方边坡计算")
-                if currentdata.verification_project.project_type == "土方直立壁开挖深度计算":
-                    print("土方直立壁开挖深度计算")
-                    # hmax = 2×c/(K×γ×tan(45°-φ/2))-q/γ
-                    # 其中，hmax - -土方最大直壁开挖高度
-                    # q - -坡顶护到均布荷载
-                    # γ - -坑壁土的重度(kN/m3)
-                    # φ - -坑壁土的内摩擦角(°)
-                    # c - -坑壁土粘聚力(kN/m2)
-                    # K - -安全系数（一般用1.25 ）
-                    # hmax = 2×12.0/(1.25×20.00×tan(45°-15.0°/2))-2.0/20.00=1.15m；
-                    # 将角度转换为弧度
-                    soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
-                    γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
+                if conCalType == CCType.SOIL_EMBANKMENT_CALCULATION:  # 土方边坡计算
+                    print("开始土方边坡计算")
+                    if currentdata.verification_project.project_type == "土方直立壁开挖深度计算":
+                        print("土方直立壁开挖深度计算")
+                        # hmax = 2×c/(K×γ×tan(45°-φ/2))-q/γ
+                        # 其中，hmax - -土方最大直壁开挖高度
+                        # q - -坡顶护到均布荷载
+                        # γ - -坑壁土的重度(kN/m3)
+                        # φ - -坑壁土的内摩擦角(°)
+                        # c - -坑壁土粘聚力(kN/m2)
+                        # K - -安全系数（一般用1.25 ）
+                        # hmax = 2×12.0/(1.25×20.00×tan(45°-15.0°/2))-2.0/20.00=1.15m；
+                        # 将角度转换为弧度
+                        soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
+                        γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
 
-                    slope_angle_in_degrees = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角 角度
-                    slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)# 坑壁土的内摩擦角 弧度
-                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
-                    q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
-                    k = 1.25  # K - -安全系数（一般用1.25 ）
-                    Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
-                    Hmax_rounded = round(Hmax, 2)  # 保留两位小数
-                    # 输出试算结果
-                    #注释Ω
-                    print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
+                        slope_angle_in_degrees = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角 角度
+                        slope_angle_in_radians = math.radians(45 - slope_angle_in_degrees / 2)# 坑壁土的内摩擦角 弧度
+                        c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
+                        q = currentdata.slope_top_load.uniform_load  # 坡顶护道均布荷载
+                        k = 1.25  # K - -安全系数（一般用1.25 ）
+                        Hmax = 2 * c / (k * γ * math.tan(slope_angle_in_radians)) - q / γ
+                        Hmax_rounded = round(Hmax, 2)  # 保留两位小数
+                        # 输出试算结果
+                        #注释Ω
+                        print(f"1.设计计算：坑壁土方立直壁最大开挖高度为{Hmax_rounded}m。")
 
-                    #region 输出计算结果到word文档
-                    # 调用函数并获取用户选择的文件夹路径
-                    #destination_file = self.select_destination_folder()
-                    destination_file = self.choose_directory_path()#这种方式可以
-                    output_filename="土方直立壁开挖深度计算.docx"
-                    content=None#正文内容
-                    if destination_file is None:
-                        print(f"没有选择存储路径")
-                        return
-                    merger = WordMer(destination_file,output_filename )
-                    merger.Set_Main_Title("土方直立壁开挖深度计算")
-                    #region
-                    doc=merger.output_doc
-                    #endregion
+                        #region 输出计算结果到word文档
+                        # 调用函数并获取用户选择的文件夹路径
+                        #destination_file = self.select_destination_folder()
+                        destination_file = self.choose_directory_path()#这种方式可以
+                        print(f"返回计算书目录：{destination_file}")
+                        output_filename="土方直立壁开挖深度计算.docx"
+                        content=None#正文内容
+                        if destination_file is None:
+                            print(f"没有选择存储路径")
+                            return
+                        merger = WordMer(destination_file,output_filename )
+                        merger.Set_Main_Title("土方直立壁开挖深度计算")
+                        #region
+                        doc=merger.output_doc
+                        #endregion
 
-                    merger.Type_Main_Title()
-                    content="计算依据：\n" \
-                            "1、《建筑基坑支护技术规程》JGJ120 - 2012\n" \
-                            "2、《建筑施工计算手册》江正荣编著\n" \
-                            "3、《实用土木工程手册》第三版杨文渊编著\n" \
-                            "4、《施工现场设施安全设计计算手册》谢建民编著\n" \
-                            "5、《地基与基础》第三版"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
-                    content=f"本工程，基坑土质为{soil_type}，且地下水位低于基坑底面标高，挖方边坡可以做成直立壁不加支撑。最大允许直壁高度按以下方法计算。"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
+                        merger.Type_Main_Title()
+                        content="计算依据：\n" \
+                                "1、《建筑基坑支护技术规程》JGJ120 - 2012\n" \
+                                "2、《建筑施工计算手册》江正荣编著\n" \
+                                "3、《实用土木工程手册》第三版杨文渊编著\n" \
+                                "4、《施工现场设施安全设计计算手册》谢建民编著\n" \
+                                "5、《地基与基础》第三版"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
+                        content=f"本工程，基坑土质为{soil_type}，且地下水位低于基坑底面标高，挖方边坡可以做成直立壁不加支撑。最大允许直壁高度按以下方法计算。"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
 
-                    merger.Set_First_Title("一、参数信息")
-                    merger.Type_First_Title()
-                    table_data = [
-                        ["坑壁土类型", soil_type, "坑壁土的重度γ(kN/m³)", γ],
-                        ["坑壁土的内摩擦角φ(°)", slope_angle_in_degrees, "坑壁土粘聚力c(kN/m²)", c],
-                        ["坑顶护道上均布荷载q(kN/m²)", q, "", ""]
-                    ]
-                    merge_info = [(3, 3, 3, 4)]#合并第三行的第三列和第四列
-                    # 合并信息，每个元组代表一个合并的范围 (开始行, 开始列, 结束行, 结束列)
-                    merger.insert_table(table_data,merge_info)
+                        merger.Set_First_Title("一、参数信息")
+                        merger.Type_First_Title()
+                        table_data = [
+                            ["坑壁土类型", soil_type, "坑壁土的重度γ(kN/m³)", γ],
+                            ["坑壁土的内摩擦角φ(°)", slope_angle_in_degrees, "坑壁土粘聚力c(kN/m²)", c],
+                            ["坑顶护道上均布荷载q(kN/m²)", q, "", ""]
+                        ]
+                        merge_info = [(3, 3, 3, 4)]#合并第三行的第三列和第四列
+                        # 合并信息，每个元组代表一个合并的范围 (开始行, 开始列, 结束行, 结束列)
+                        merger.insert_table(table_data,merge_info)
 
-                    merger.Set_First_Title("二、土方直立壁开挖高度计算:")
-                    merger.Type_First_Title()
+                        merger.Set_First_Title("二、土方直立壁开挖高度计算:")
+                        merger.Type_First_Title()
 
-                    content="土方最大直壁开挖高度按以下公式计算 ：" \
-                            "\nhmax = 2×c / (K×γ×tan(45°-φ / 2))-q / γ\
-                            \n其中，hmax - -土方最大直壁开挖高度\
-                            \nq—坡顶护道均布荷载\
-                            \nγ - -坑壁土的重度(kN/m3)\
-                            \nφ - -坑壁土的内摩擦角(°)\
-                            \nc - -坑壁土粘聚力(kN / m2)\
-                            \nK - -安全系数（一般用1.25 ）"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
+                        content="土方最大直壁开挖高度按以下公式计算 ：" \
+                                "\nhmax = 2×c / (K×γ×tan(45°-φ / 2))-q / γ\
+                                \n其中，hmax - -土方最大直壁开挖高度\
+                                \nq—坡顶护道均布荷载\
+                                \nγ - -坑壁土的重度(kN/m3)\
+                                \nφ - -坑壁土的内摩擦角(°)\
+                                \nc - -坑壁土粘聚力(kN / m2)\
+                                \nK - -安全系数（一般用1.25 ）"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
 
-                    # 添加公式
-                    formula_text = f"Hmax = (2*{c})/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
-                    # 将根号符号替换为带有上方一横的Unicode字符
+                        # 添加公式
+                        formula_text = f"Hmax = (2*{c})/({k}*{γ}*tan(45° - {slope_angle_in_degrees}^°)-{q}/{γ}={Hmax:.2f}m"
+                        # 将根号符号替换为带有上方一横的Unicode字符
 
-                    #merger.insert_formula(formula_text)
-                    merger.insert_formula(c,k,γ, slope_angle_in_degrees, q, Hmax)
-                    #content = (
-                    #    f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
-                    #   f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
-                    # )
-                    #merger.Set_Doc_Content(content)
-                    #merger.Type_Doc_Content()
-                    content = f"\n本工程的基坑土方立直壁最大开挖高度为{Hmax:.2f}m。"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
-                    merger.insert_image(r"D:\Cache\ztzp-ConCaSys\DrawGraphinsScene\slope - word.png")#插入图片
-                    #merger.quit_docs
-                    # endregion 输出计算结果到word文档
-                    pass
-                elif currentdata.verification_project.project_type == "基坑安全边坡计算":
-                    print("基坑安全边坡计算")
-                    soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
-                    γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
+                        #merger.insert_formula(formula_text)
+                        merger.insert_formula(c,k,γ, slope_angle_in_degrees, q, Hmax)
+                        #content = (
+                        #    f"Hmax = 2 * {c} / ({k} * {γ} * tan(45° - {slope_angle_in_degrees}° / 2)) - {q} / {γ}"
+                        #   f" = {Hmax:.2f}m"#结果 Hmax 被四舍五入到小数点后两位，并添加了单位（米）
+                        # )
+                        #merger.Set_Doc_Content(content)
+                        #merger.Type_Doc_Content()
+                        content = f"\n本工程的基坑土方立直壁最大开挖高度为{Hmax:.2f}m。"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
+                        # 获取当前工作目录
+                        current_dir = os.path.dirname(os.path.abspath(__file__))
+                        # 构建相对于当前文件的图片路径
+                        image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "slope - word.png")
+                        
+                        # 检查图片是否存在
+                        if os.path.exists(image_path):
+                            try:
+                                merger.insert_image(image_path)
+                            except Exception as e:
+                                print(f"插入图片时出错: {str(e)}")
+                        else:
+                            print(f"警告：找不到图片文件: {image_path}")
+                            
+                        # endregion 输出计算结果到word文档
+                        pass
+                    elif currentdata.verification_project.project_type == "基坑安全边坡计算":
+                        print("基坑安全边坡计算")
+                        soil_type = currentdata.basic_parameters.soil_type  # 坑壁土的类型
+                        γ = currentdata.basic_parameters.unit_weight  # 坑壁土的重度
 
-                    φ = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角φ(°)
-                    φ_Radians = math.radians(φ)  # 坑壁土的内摩擦角φ(°)
+                        φ = currentdata.basic_parameters.internal_friction_angle  # 坑壁土的内摩擦角φ(°)
+                        φ_Radians = math.radians(φ)  # 坑壁土的内摩擦角φ(°)
 
-                    c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
+                        c = currentdata.basic_parameters.cohesion  # 坑壁土粘聚力
 
-                    θ = currentdata.basic_parameters.slope_angle  # 边坡的坡度角
-                    θ_Radians = math.radians(θ)  # 边坡的坡度角弧度
-                    #v：土的重度（kN/m³）：【0.1，40】包括0，包括40
-                    # Φ：坑壁土的内摩擦角φ(°)：【0，90）包括0，不包括90
-                    # c：土粘聚力(kN/㎡)：【0，50】包括0，包括50
-                    # Θ：边坡的坡度角(°)：（0，90】不包括0，包括90
+                        θ = currentdata.basic_parameters.slope_angle  # 边坡的坡度角
+                        θ_Radians = math.radians(θ)  # 边坡的坡度角弧度
+                        #v：土的重度（kN/m³）：【0.1，40】包括0，包括40
+                        # Φ：坑壁土的内摩擦角φ(°)：【0，90）包括0，不包括90
+                        # c：土粘聚力(kN/㎡)：【0，50】包括0，包括50
+                        # Θ：边坡的坡度角(°)：（0，90】不包括0，包括90
 
-                    #1、如果  θ=φ=45°，边坡高度不受限制。
-                    #2、如果  θ>φ=45°，c≠0
-                    # 为陡坡 h=2csinθcosφ/(γsin2((θ-φ)/2))=2×10×sin46×cos45/(20×sin2((46-45)/2))=6679.368m。土坡允许最大高度为6679.368m。
-                    #3、θ  > φ = 45°，c = 0 挖方边坡任何高度都不稳定。
-                    #4、θ=44°<φ=45°，c≠0或者c=0，为缓坡。
-                    # h=2csinθcosφ/(γsin2((θ-φ)/2))=2×1×sin44×cos45/(20×sin2((44-45)/2))=645.019m。土坡允许最大高度为645.019m。
+                        #1、如果  θ=φ=45°，边坡高度不受限制。
+                        #2、如果  θ>φ=45°，c≠0
+                        # 为陡坡 h=2csinθcosφ/(γsin2((θ-φ)/2))=2×10×sin46×cos45/(20×sin2((46-45)/2))=6679.368m。土坡允许最大高度为6679.368m。
+                        #3、θ  > φ = 45°，c = 0 挖方边坡任何高度都不稳定。
+                        #4、θ=44°<φ=45°，c≠0或者c=0，为缓坡。
+                        # h=2csinθcosφ/(γsin2((θ-φ)/2))=2×1×sin44×cos45/(20×sin2((44-45)/2))=645.019m。土坡允许最大高度为645.019m。
 
 
-                    # region 输出计算结果到word文档
-                    # 调用函数并获取用户选择的文件夹路径
-                    # destination_file = self.select_destination_folder()
-                    destination_file = self.choose_directory_path()  # 这种方式可以
-                    output_filename = "基坑安全边坡计算.docx"
-                    content = None  # 正文内容
-                    if destination_file is None:
-                        print(f"没有选择存储路径")
-                        return
-                    merger = WordMer(destination_file, output_filename)
-                    merger.Set_Main_Title("基坑安全边坡计算")
-                    merger.Type_Main_Title()
-                    content = "计算依据：\n" \
-                              "1、《建筑基坑支护技术规程》JGJ120 - 2012\n" \
-                              "2、《建筑施工计算手册》江正荣编著\n" \
-                              "3、《实用土木工程手册》第三版杨文渊编著\n" \
-                              "4、《施工现场设施安全设计计算手册》谢建民编著\n" \
-                              "5、《地基与基础》第三版"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
-                    content = f"本工程基坑壁需进行放坡，以保证边坡稳定和施工操作安全。基坑挖方安全边坡按以下方法计算。"
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
+                        # region 输出计算结果到word文档
+                        # 调用函数并获取用户选择的文件夹路径
+                        # destination_file = self.select_destination_folder()
+                        destination_file = self.choose_directory_path()  # 这种方式可以
+                        output_filename = "基坑安全边坡计算.docx"
+                        content = None  # 正文内容
+                        if destination_file is None:
+                            print(f"没有选择存储路径")
+                            return
+                        merger = WordMer(destination_file, output_filename)
+                        merger.Set_Main_Title("基坑安全边坡计算")
+                        merger.Type_Main_Title()
+                        content = "计算依据：\n" \
+                                  "1、《建筑基坑支护技术规程》JGJ120 - 2012\n" \
+                                  "2、《建筑施工计算手册》江正荣编著\n" \
+                                  "3、《实用土木工程手册》第三版杨文渊编著\n" \
+                                  "4、《施工现场设施安全设计计算手册》谢建民编著\n" \
+                                  "5、《地基与基础》第三版"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
+                        content = f"本工程基坑壁需进行放坡，以保证边坡稳定和施工操作安全。基坑挖方安全边坡按以下方法计算。"
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
 
-                    merger.Set_First_Title("一、参数信息")
-                    merger.Type_First_Title()
-                    table_data = [
-                        ["坑壁土类型", soil_type, "坑壁土的重度γ(kN/m³)", γ],
-                        ["坑壁土的内摩擦角φ(°)", φ, "坑壁土粘聚力c(kN/m²)", c],
-                        ["边坡的坡度角θ(°)", θ, "", ""]
-                    ]
-                    merge_info = [(3, 3, 3, 4)]  # 合并第三行的第三列和第四列，word合并初始从1开始合并
-                    # 合并信息，每个元组代表一个合并的范围 (开始行, 开始列, 结束行, 结束列)
-                    merger.insert_table(table_data, merge_info)
-                    merger.Set_First_Title("二、挖方安全边坡计算:")
-                    merger.Type_First_Title()
-                    content = ("暂定，根据计算结果确定")
-                    if abs(θ-φ)==0:
-                        content =f"θ=φ={θ}°，边坡高度不受限制。"
-                    elif (θ-φ>0) and(c != 0):
-                        Hight = 2 * c * math.sin(θ_Radians) * math.cos(φ_Radians) / (
-                                γ * math.sin((θ_Radians - φ_Radians) / 2) ** 2)
-                        Hight_rounded = round(Hight, 3)  # 保留两位小数
-                        content =f"θ={θ}>φ={φ}，c≠0为陡坡。\n" \
-                                 f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n" \
-                                 f"土坡允许最大高度为{Hight_rounded}m\n"
+                        merger.Set_First_Title("一、参数信息")
+                        merger.Type_First_Title()
+                        table_data = [
+                            ["坑壁土类型", soil_type, "坑壁土的重度γ(kN/m³)", γ],
+                            ["坑壁土的内摩擦角φ(°)", φ, "坑壁土粘聚力c(kN/m²)", c],
+                            ["边坡的坡度角θ(°)", θ, "", ""]
+                        ]
+                        merge_info = [(3, 3, 3, 4)]  # 合并第三行的第三列和第四列，word合并初始从1开始合并
+                        # 合并信息，每个元组代表一个合并的范围 (开始行, 开始列, 结束行, 结束列)
+                        merger.insert_table(table_data, merge_info)
+                        merger.Set_First_Title("二、挖方安全边坡计算:")
+                        merger.Type_First_Title()
+                        content = ("暂定，根据计算结果确定")
+                        if abs(θ-φ)==0:
+                            content =f"θ=φ={θ}°，边坡高度不受限制。"
+                        elif (θ-φ>0) and(c != 0):
+                            Hight = 2 * c * math.sin(θ_Radians) * math.cos(φ_Radians) / (
+                                    γ * math.sin((θ_Radians - φ_Radians) / 2) ** 2)
+                            Hight_rounded = round(Hight, 3)  # 保留两位小数
+                            content =f"θ={θ}>φ={φ}，c≠0为陡坡。\n" \
+                                     f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n" \
+                                     f"土坡允许最大高度为{Hight_rounded}m\n"
 
-                    elif (θ-φ>0) and(c == 0):
-                        content = f"θ={θ}>φ={φ}，c=0。\n" \
-                                  "挖方边坡任何高度都不稳定\n"
-                    elif (θ-φ<0):
-                        Hight = 2 * c * math.sin(θ_Radians) * math.cos(φ_Radians) / \
-                                (γ * math.sin((θ_Radians - φ_Radians) / 2) ** 2)
-                        Hight_rounded = round(Hight, 3)  # 保留两位小数
-                        content = f"θ={θ}<φ={φ}，为缓坡。\n" \
-                                  f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n"\
-                                  f"土坡允许最大高度为{Hight_rounded}m\n"
+                        elif (θ-φ>0) and(c == 0):
+                            content = f"θ={θ}>φ={φ}，c=0。\n" \
+                                      "挖方边坡任何高度都不稳定\n"
+                        elif (θ-φ<0):
+                            Hight = 2 * c * math.sin(θ_Radians) * math.cos(φ_Radians) / \
+                                    (γ * math.sin((θ_Radians - φ_Radians) / 2) ** 2)
+                            Hight_rounded = round(Hight, 3)  # 保留两位小数
+                            content = f"θ={θ}<φ={φ}，为缓坡。\n" \
+                                      f"h=2csinθcosφ/(γsin²((θ-φ)/2))=2x{c}xsin{θ}xcos{φ}/({γ}xsin²(({θ}-{φ})/2)={Hight_rounded}\n"\
+                                      f"土坡允许最大高度为{Hight_rounded}m\n"
 
-                    merger.Set_Doc_Content(content)
-                    merger.Type_Doc_Content()
-                    merger.insert_image(r"D:\Cache\ztzp-ConCaSys\DrawGraphinsScene\slope_2 - word.png")  # 插入图片
-                    # merger.quit_docs
-                    # endregion 输出计算结果到word文档
-                    pass
+                        merger.Set_Doc_Content(content)
+                        merger.Type_Doc_Content()
+                        # 获取当前工作目录
+                        current_dir = os.path.dirname(os.path.abspath(__file__))
+                        # 构建相对于当前文件的图片路径
+                        image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "slope_2 - word.png")
+                        
+                        # 检查图片是否存在
+                        if os.path.exists(image_path):
+                            try:
+                                merger.insert_image(image_path)
+                            except Exception as e:
+                                print(f"插入图片时出错: {str(e)}")
+                        else:
+                            print(f"警告：找不到图片文件: {image_path}")
+                            
+                        # endregion 输出计算结果到word文档
+                        pass
 
-        print("设计计算结束")
+            print("设计计算结束")
+        except Exception as e:
+            print(f"计算过程中出错: {str(e)}")
+            import traceback
+            traceback.print_exc()
     def onConstructionSchemeClicked(self, item):  # 施工方案
         print("施工方案")
     def onCalculationDisclosureClicked(self, item):#计算交底

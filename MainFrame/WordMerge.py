@@ -1,23 +1,48 @@
 import os
 import sys
 import win32com.client as win32
-#修改了
+import shutil
+
+def clear_com_cache():
+    # 获取缓存目录
+    cache_dir = os.path.join(os.environ['LOCALAPPDATA'], 'Temp', 'gen_py')
+    if os.path.exists(cache_dir):
+        try:
+            shutil.rmtree(cache_dir)
+        except Exception as e:
+            print(f"Warning: Failed to clear COM cache: {e}")
 
 # 合并多个word文档，应用模板里面的设置
 class WordDocumentMerger:
 
     def __init__(self, root_directory, output_filename):#root_directory：文件夹路径 output_filename：输出的文件名
         self.root_directory = root_directory
-        # self.output_filename = root_directory+"\\"+ output_filename
         self.output_filename = os.path.join(root_directory, output_filename)
-        self.word = win32.gencache.EnsureDispatch('Word.Application')
+        
+        # 清理COM缓存并初始化Word
+        try:
+            clear_com_cache()
+            self.word = win32.Dispatch('Word.Application')
+        except Exception as e:
+            print(f"Error initializing Word: {e}")
+            raise
+            
         self.word.Visible = True
         self.template_path = None
 
-        current_working_directory = os.getcwd()  # D:\Cache\ztzp-ttms\MainFrame
-        # QMessageBox.information(None, '未打包之前word文档所在的根目录为：', current_working_directory)
-        print(f"未打包之前的根目录为：{current_working_directory}")  # D:\Cache\ztzp-ttms\MainFrame
-        self.template_path = "D:\Cache\ztzp-ConCaSys\WordTemplate\样式1.dotx"  # Word 模板的路径
+        # 获取当前文件所在目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 获取项目根目录（当前目录的父目录）
+        project_root = os.path.dirname(current_dir)
+        # 构建模板文件的相对路径
+        self.template_path = os.path.join(project_root, "WordTemplate", "样式1.dotx")
+        
+        print(f"模板文件路径: {self.template_path}")
+        
+        # 检查模板文件是否存在
+        if not os.path.exists(self.template_path):
+            raise FileNotFoundError(f"找不到模板文件: {self.template_path}")
+
         # 设置 Word 不显示警告
         self.word.DisplayAlerts = False
         # 如果输出文件已存在，则删除其中的内容，重新填入内容
@@ -64,17 +89,17 @@ class WordDocumentMerger:
         self.word.Selection.Style = self.word.ActiveDocument.Styles("标题 1")  # 设置为一级标题的样式
         # 将当前段落设置为居中对齐
         self.word.Selection.ParagraphFormat.Alignment = 1  # 0:左对齐； 1:居中对齐；2:表居右对齐
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
     def Set_Doc_Content(self, Content):
         self.Doc_Content = Content
     def Type_Doc_Content(self):
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
         self.word.Selection.EndKey(6)  # 6 表示移动到文档末尾
         self.word.Selection.TypeText(self.Doc_Content)  # 在这里替换为你的标题文本
         self.word.Selection.Style = self.word.ActiveDocument.Styles("正文")  # 设置为一级标题的样式
         # 将当前段落设置为居中对齐
         self.word.Selection.ParagraphFormat.Alignment = 0  # 0:左对齐； 1:居中对齐；2:表居右对齐
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
 
     def Set_First_Title(self, title):
         self.First_Title = title
@@ -82,7 +107,7 @@ class WordDocumentMerger:
     def Type_First_Title(self):
         self.word.Selection.TypeText(self.First_Title)  # 在这里替换为你的标题文本
         self.word.Selection.Style = self.word.ActiveDocument.Styles("标题 2")  # 设置为一级标题的样式
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
 
     def Set_Second_Title(self, title):
         self.Second_Title = title
@@ -90,7 +115,7 @@ class WordDocumentMerger:
     def Type_Second_Title(self):
         self.word.Selection.TypeText(self.Second_Title)  # 在这里替换为你的标题文本
         self.word.Selection.Style = self.word.ActiveDocument.Styles("标题 3")  # 设置为一级标题的样式
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
         # self.word.Selection.InsertBreak(Type=7)  # 7 代表分页符，二级标题总是分页进行输出
 
     def Set_Third_Title(self, title):
@@ -99,7 +124,7 @@ class WordDocumentMerger:
     def Type_Third_Title(self):
         self.word.Selection.TypeText(self.Third_Title)  # 在这里替换为你的标题文本
         self.word.Selection.Style = self.word.ActiveDocument.Styles("标题 4")  # 设置为一级标题的样式
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
 
     def Set_Fourth_Title(self, title):
         self.Fourth_Title = title
@@ -110,7 +135,7 @@ class WordDocumentMerger:
             self.word.Selection.Style = self.word.ActiveDocument.Styles("标题 5")  # 设置为一级标题的样式
         else:
             pass  # 在这里替换为你的标题文本
-        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即“回车”），因为标题后通常是一个新的段落
+        self.word.Selection.TypeParagraph()  # 添加一个段落换行（即"回车"），因为标题后通常是一个新的段落
 
     def Set_Fifth_Title(self, title):
         self.Fifth_Title = title
