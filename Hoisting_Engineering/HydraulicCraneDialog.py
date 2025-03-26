@@ -1,13 +1,16 @@
 #液压汽车起重机吊装计算界面
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QRadioButton, QButtonGroup, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox, QFrame
+    QRadioButton, QButtonGroup, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox, QFrame, QTabWidget
 )
 import sys
 import uuid
 from PyQt5.QtCore import Qt
 from DataStruDef.EarthSlopeCalculation import VerificationProject
 from DataStruDef.HydraulicCraneData import HydraulicCraneData
+from .CraneRequirementsDialog import CraneRequirementsDialog
+from .CraneSelectionDialog import CraneSelectionDialog
+from .CraneParametersDialog import CraneParametersDialog
 # para_uuid:
 # 类型：UUID 或 None
 # 作用：用于唯一标识对话框实例。如果没有提供，则在初始化时生成一个新的UUID。这在需要跟踪多个对话框实例时非常有用。
@@ -69,64 +72,27 @@ class HydraulicCraneDialog(QDialog):
         basic_layout.addWidget(self.custom_radio, 2, 1)
         basic_group.setLayout(basic_layout)
         
-        # 2. 吊装要求组
-        requirements_group = QGroupBox("吊装要求")
-        requirements_layout = QGridLayout()
+        # 2. 创建标签页组件
+        tab_widget = QTabWidget()
         
-        # 子标题
-        requirements_layout.addWidget(QLabel("起重机选型"), 0, 0)
-        requirements_layout.addWidget(QLabel("起重机相关计算参数"), 0, 1)
+        # 创建三个子对话框
+        self.requirements_dialog = CraneRequirementsDialog(self)
+        self.selection_dialog = CraneSelectionDialog(self)
+        self.parameters_dialog = CraneParametersDialog(self)
         
-        # 吊装高度
-        requirements_layout.addWidget(QLabel("吊物顶面距地面最大吊装高度h1(m):"), 1, 0)
-        self.max_height_edit = QLineEdit(str(self.data.max_lifting_height))
-        self.max_height_edit.textChanged.connect(self.on_data_changed)
-        requirements_layout.addWidget(self.max_height_edit, 1, 1)
+        # 添加标签页
+        tab_widget.addTab(self.requirements_dialog, "吊装要求")
+        tab_widget.addTab(self.selection_dialog, "起重机选型")
+        tab_widget.addTab(self.parameters_dialog, "起重机相关计算参数")
         
-        # 最小距离
-        requirements_layout.addWidget(QLabel("吊物顶面距起重臂端部的最小距离h2(m):"), 2, 0)
-        self.min_distance_edit = QLineEdit(str(self.data.min_boom_distance))
-        self.min_distance_edit.textChanged.connect(self.on_data_changed)
-        requirements_layout.addWidget(self.min_distance_edit, 2, 1)
+        # 连接子对话框的数据改变信号
+        self.requirements_dialog.data_changed.connect(self.on_data_changed)
+        self.selection_dialog.data_changed.connect(self.on_data_changed)
+        self.parameters_dialog.data_changed.connect(self.on_data_changed)
         
-        # 工作幅度确定方法
-        requirements_layout.addWidget(QLabel("工作幅度确定方法:"), 3, 0)
-        self.radius_method_combo = QComboBox()
-        self.radius_method_combo.addItem("智能确定")
-        self.radius_method_combo.setCurrentText(self.data.working_radius_method)
-        self.radius_method_combo.currentTextChanged.connect(self.on_data_changed)
-        requirements_layout.addWidget(self.radius_method_combo, 3, 1)
-        
-        # 最小工作幅度
-        requirements_layout.addWidget(QLabel("场地要求的最小工作幅度(m):"), 4, 0)
-        self.min_radius_edit = QLineEdit(str(self.data.min_working_radius))
-        self.min_radius_edit.textChanged.connect(self.on_data_changed)
-        requirements_layout.addWidget(self.min_radius_edit, 4, 1)
-        
-        requirements_group.setLayout(requirements_layout)
-        
-        # 3. 安全距离复核组
-        safety_group = QGroupBox("吊物与起重臂安全距离复核")
-        safety_layout = QGridLayout()
-        
-        # 水平距离
-        safety_layout.addWidget(QLabel("特性弧线最高吊钩（起重臂终端）中心的水平距离b(m):"), 0, 0)
-        self.horizontal_distance_edit = QLineEdit(str(self.data.horizontal_distance))
-        self.horizontal_distance_edit.textChanged.connect(self.on_data_changed)
-        safety_layout.addWidget(self.horizontal_distance_edit, 0, 1)
-        
-        # 安全距离
-        safety_layout.addWidget(QLabel("安装构件边缘距起重臂中心的最小安全距离L(m):"), 1, 0)
-        self.safety_distance_edit = QLineEdit(str(self.data.min_safety_distance))
-        self.safety_distance_edit.textChanged.connect(self.on_data_changed)
-        safety_layout.addWidget(self.safety_distance_edit, 1, 1)
-        
-        safety_group.setLayout(safety_layout)
-        
-        # 添加所有组到主布局
+        # 添加所有组件到主布局
         main_layout.addWidget(basic_group)
-        main_layout.addWidget(requirements_group)
-        main_layout.addWidget(safety_group)
+        main_layout.addWidget(tab_widget)
         
         self.setLayout(main_layout)
 
@@ -137,15 +103,27 @@ class HydraulicCraneDialog(QDialog):
     def updateCalculationData(self):
         """更新计算数据"""
         try:
+            # 更新基本参数
             self.data.crane_weight = float(self.crane_weight_edit.text())
             self.data.power_factor = float(self.power_factor_edit.text())
             self.data.is_smart_recommendation = self.smart_radio.isChecked()
-            self.data.max_lifting_height = float(self.max_height_edit.text())
-            self.data.min_boom_distance = float(self.min_distance_edit.text())
-            self.data.working_radius_method = self.radius_method_combo.currentText()
-            self.data.min_working_radius = float(self.min_radius_edit.text())
-            self.data.horizontal_distance = float(self.horizontal_distance_edit.text())
-            self.data.min_safety_distance = float(self.safety_distance_edit.text())
+            
+            # 获取子对话框数据
+            requirements_data = self.requirements_dialog.get_data()
+            selection_data = self.selection_dialog.get_data()
+            parameters_data = self.parameters_dialog.get_data()
+            
+            # 更新吊装要求数据
+            self.data.max_lifting_height = requirements_data['max_lifting_height']
+            self.data.min_boom_distance = requirements_data['min_boom_distance']
+            self.data.working_radius_method = requirements_data['working_radius_method']
+            self.data.min_working_radius = requirements_data['min_working_radius']
+            
+            # 将选型和参数数据存储到计算结果字典中
+            self.data.calculation_results.update({
+                'crane_selection': selection_data,
+                'crane_parameters': parameters_data
+            })
             
             self.IsSave = True
             return self.data
