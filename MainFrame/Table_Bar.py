@@ -225,47 +225,70 @@ class ECSTabWidget(QTabWidget):
         # 返回用户点击的按钮
         return retval
     def removeTabByIndexAnduuid(self,index,tab_uuid):
-        print("移除tab页面")
+        """
+        移除指定索引和UUID的标签页
+        Args:
+            index: 标签页索引
+            tab_uuid: 标签页UUID
+        """
+        print(f"移除tab页面，索引：{index}，UUID：{tab_uuid}")
         # 使用这个UUID作为键来从字典中获取对应的对话框对象
         dialog = self.m_dialog_uuid_map.get(tab_uuid, None)
         # 检查是否找到了对话框
-        if dialog is not None:#对话框存在
-            if isinstance(dialog, EarthSlopeDialog):
-                issave=dialog.IsSave#是否保存
-                if not issave:#对话框数据没有保存，提示是否保存
-                    retval =self.ShowMessageBox("操作提示","保存当前所有更改的设置吗？",
-                                                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,QMessageBox.Yes)
-                    # 判断用户点击了哪个按钮，并进行相应处理
-                    if retval == QMessageBox.Yes:
-                        # 保存对话框的当前数据，更新数据库
-                        #1、获取对话框的数据
-                        slopedata=dialog.updateCalculationData()#获取对话框的数据
-                        #2、将uuid和对话框的数据存储到self.m_dialog_data_map = {}
-                        self.m_dialog_data_map[tab_uuid] = slopedata#如果没有就添加，如果存在旧的 则用新的覆盖
-                        self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
-                        self.removeTab(index)#移除标签页
-                        dialog.IsSave=True#对话框是否已经保存为True
-                        #更新数据库的数据
-                        print("用户选择了'是'")
-                        #重新序列化话数据
-                    elif retval == QMessageBox.No:
-                        self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
-                        self.removeTab(index)
-                        #不保存对话框的当前数据，不更新数据库
-                        dialog.IsSave = True
-                        #不更新数据库的数据
-                        print("用户选择了'否'")
-                    elif retval == QMessageBox.Cancel:
-                        #返回对话框
-                        print("用户选择了'取消'")
-                elif issave :#保存了
-                    self.uuid_set.discard(tab_uuid)  # 移除标签页中显示的uuid
-                    # 1、获取对话框的数据
-                    slopedata = dialog.updateCalculationData()  # 获取对话框的数据
-                    # 2、将uuid和对话框的数据存储到self.m_dialog_data_map = {}
-                    self.m_dialog_data_map[tab_uuid] = slopedata  # 如果没有就添加，如果存在旧的 则用新的覆盖
-                    self.removeTab(index)
-            # 对话框被找到，可以进行进一步的操作
+        if dialog is not None:  # 对话框存在
+            try:
+                # 检查对话框是否有保存状态属性
+                if hasattr(dialog, 'IsSave'):
+                    issave = dialog.IsSave  # 是否保存
+                    if not issave:  # 对话框数据没有保存，提示是否保存
+                        retval = self.ShowMessageBox("操作提示", "保存当前所有更改的设置吗？",
+                                                   QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+                        # 判断用户点击了哪个按钮，并进行相应处理
+                        if retval == QMessageBox.Yes:
+                            # 保存对话框的当前数据
+                            if hasattr(dialog, 'updateCalculationData'):
+                                dialog_data = dialog.updateCalculationData()
+                                if dialog_data:
+                                    self.m_dialog_data_map[tab_uuid] = dialog_data
+                            
+                            self.uuid_set.discard(tab_uuid)  # 移除UUID
+                            self.removeTab(index)  # 移除标签页
+                            dialog.close()  # 关闭对话框
+                            print("用户选择了'是'")
+                            
+                        elif retval == QMessageBox.No:
+                            self.uuid_set.discard(tab_uuid)  # 移除UUID
+                            self.removeTab(index)  # 移除标签页
+                            dialog.close()  # 关闭对话框
+                            print("用户选择了'否'")
+                            
+                        elif retval == QMessageBox.Cancel:
+                            print("用户选择了'取消'")
+                            return
+                    else:  # 已保存
+                        if hasattr(dialog, 'updateCalculationData'):
+                            dialog_data = dialog.updateCalculationData()
+                            if dialog_data:
+                                self.m_dialog_data_map[tab_uuid] = dialog_data
+                        
+                        self.uuid_set.discard(tab_uuid)  # 移除UUID
+                        self.removeTab(index)  # 移除标签页
+                        dialog.close()  # 关闭对话框
+                else:
+                    # 对话框没有保存状态属性，直接关闭
+                    self.uuid_set.discard(tab_uuid)  # 移除UUID
+                    self.removeTab(index)  # 移除标签页
+                    dialog.close()  # 关闭对话框
+                
+                # 从映射中移除对话框
+                self.m_dialog_uuid_map.pop(tab_uuid, None)
+                
+            except Exception as e:
+                print(f"移除标签页时发生错误: {str(e)}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"找不到UUID为{tab_uuid}的对话框")
     #根据uuid找到对应的索引
     def findTabIndexByUuid(self, struuid):
         for index in range(self.count()):
