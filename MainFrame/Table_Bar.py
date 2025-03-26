@@ -134,13 +134,50 @@ class ECSTabWidget(QTabWidget):
         self.updateTabStyles()
 
     def UpdataDialogData(self, prodata):
-        self.m_dialog_data_map = prodata  # 标签页对话框的数据更新
-        #更新uuid和对应的对话框实体
-        for uuid, dialog_data in self.m_dialog_data_map.items():
-            if dialog_data.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:#土方边坡计算
-                dialog_instance = EarthSlopeDialog(uuid,dialog_data)
-                self.m_dialog_uuid_map[uuid] = dialog_instance
-
+        """
+        更新对话框数据和实例
+        Args:
+            prodata: 项目数据字典，包含所有对话框的数据
+        """
+        print(f"开始更新对话框数据，数据内容：{prodata}")
+        try:
+            self.m_dialog_data_map = prodata  # 更新标签页对话框的数据
+            
+            # 清理现有的对话框实例
+            for dialog in self.m_dialog_uuid_map.values():
+                if hasattr(dialog, 'close'):
+                    dialog.close()
+            self.m_dialog_uuid_map.clear()
+            
+            # 根据数据重新创建对话框实例
+            for uuid, dialog_data in self.m_dialog_data_map.items():
+                if hasattr(dialog_data, 'conCalType'):
+                    print(f"处理UUID为{uuid}的对话框数据，类型为：{dialog_data.conCalType}")
+                    
+                    if dialog_data.conCalType == Conct.SOIL_EMBANKMENT_CALCULATION:
+                        # 土方边坡计算
+                        dialog_instance = EarthSlopeDialog(uuid, dialog_data)
+                    elif dialog_data.conCalType == Conct.HYDRAULIC_CRANE_CALCULATION:
+                        # 液压起重机计算
+                        from Hoisting_Engineering.HydraulicCraneDialog import HydraulicCraneDialog
+                        dialog_instance = HydraulicCraneDialog(uuid, dialog_data)
+                    # 在这里添加其他类型的对话框处理...
+                    else:
+                        print(f"未知的对话框类型：{dialog_data.conCalType}")
+                        continue
+                    
+                    # 存储新创建的对话框实例
+                    self.m_dialog_uuid_map[uuid] = dialog_instance
+                    print(f"成功创建并存储对话框实例，UUID：{uuid}")
+                else:
+                    print(f"对话框数据缺少conCalType属性：{dialog_data}")
+                    
+        except Exception as e:
+            print(f"更新对话框数据时发生错误: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+        print("完成对话框数据更新")
 
     def updateTabStyles(self):
         for i in range(self.count()):
@@ -226,7 +263,7 @@ class ECSTabWidget(QTabWidget):
         return retval
     def removeTabByIndexAnduuid(self,index,tab_uuid):
         """
-        移除指定索引和UUID的标签页
+        移除指定索引和UUID的标签页，但保留对话框实例
         Args:
             index: 标签页索引
             tab_uuid: 标签页UUID
@@ -251,16 +288,16 @@ class ECSTabWidget(QTabWidget):
                                 if dialog_data:
                                     self.m_dialog_data_map[tab_uuid] = dialog_data
                             
-                            self.uuid_set.discard(tab_uuid)  # 移除UUID
+                            self.uuid_set.discard(tab_uuid)  # 从显示集合中移除UUID
                             self.removeTab(index)  # 移除标签页
-                            dialog.close()  # 关闭对话框
-                            print("用户选择了'是'")
+                            dialog.hide()  # 隐藏对话框而不是关闭
+                            print("用户选择了'是'，对话框数据已保存")
                             
                         elif retval == QMessageBox.No:
-                            self.uuid_set.discard(tab_uuid)  # 移除UUID
+                            self.uuid_set.discard(tab_uuid)  # 从显示集合中移除UUID
                             self.removeTab(index)  # 移除标签页
-                            dialog.close()  # 关闭对话框
-                            print("用户选择了'否'")
+                            dialog.hide()  # 隐藏对话框而不是关闭
+                            print("用户选择了'否'，对话框已隐藏")
                             
                         elif retval == QMessageBox.Cancel:
                             print("用户选择了'取消'")
@@ -271,17 +308,17 @@ class ECSTabWidget(QTabWidget):
                             if dialog_data:
                                 self.m_dialog_data_map[tab_uuid] = dialog_data
                         
-                        self.uuid_set.discard(tab_uuid)  # 移除UUID
+                        self.uuid_set.discard(tab_uuid)  # 从显示集合中移除UUID
                         self.removeTab(index)  # 移除标签页
-                        dialog.close()  # 关闭对话框
+                        dialog.hide()  # 隐藏对话框而不是关闭
                 else:
-                    # 对话框没有保存状态属性，直接关闭
-                    self.uuid_set.discard(tab_uuid)  # 移除UUID
+                    # 对话框没有保存状态属性，直接隐藏
+                    self.uuid_set.discard(tab_uuid)  # 从显示集合中移除UUID
                     self.removeTab(index)  # 移除标签页
-                    dialog.close()  # 关闭对话框
+                    dialog.hide()  # 隐藏对话框而不是关闭
                 
-                # 从映射中移除对话框
-                self.m_dialog_uuid_map.pop(tab_uuid, None)
+                # 保持对话框实例在映射中，不再移除
+                print(f"对话框实例已保存在映射中，UUID：{tab_uuid}")
                 
             except Exception as e:
                 print(f"移除标签页时发生错误: {str(e)}")
@@ -298,7 +335,7 @@ class ECSTabWidget(QTabWidget):
         return -1  # 如果没有找到匹配的uuid，返回-1表示不存在
     # region 添加新的标签页
         #strName为标签的名字，dialog为QWidget对话框，如何对话框存在，则切换对话框，如果对话框不存在，则新添一个对话框
-    def AddNewLable(self,strName,dialog,struuid=None):#默认添加的是QWidget
+    def AddNewLable(self,strName,dialog,struuid=None):
         """
         添加新的标签页或切换到已存在的标签页
         Args:
@@ -315,25 +352,30 @@ class ECSTabWidget(QTabWidget):
             return -1
             
         try:
+            # 检查是否已有此对话框实例
+            existing_dialog = self.m_dialog_uuid_map.get(struuid)
+            if existing_dialog:
+                print(f"找到已存在的对话框实例，UUID：{struuid}")
+                dialog = existing_dialog  # 使用已存在的实例
+            
             if struuid in self.uuid_set:  # 显示的对话框中有这个元素
                 print(f"Table已经添加了ID为：{struuid}，名字为{strName}的对话框")
                 # 查找已存在的标签页
                 index = self.findTabIndexByUuid(struuid)
                 if index != -1:
                     print(f"找到已存在的标签页，索引为：{index}")
+                    if not dialog.isVisible():
+                        dialog.show()
                     self.m_index = index
                     self.setCurrentIndex(index)  # 显示当前的标签页
                     return index
-                else:
-                    print(f"警告：UUID在集合中但找不到对应的标签页")
-                    self.uuid_set.remove(struuid)  # 清理不一致的状态
-            
+                    
             # 创建新的标签页
-            print(f"Table未添加ID为：{struuid}，名字为：{strName}的对话框")
+            print(f"创建新标签页，ID为：{struuid}，名字为：{strName}")
             tab = QWidget()  # 定义一个标签
             tab.setProperty("uuid", struuid)  # 给标签设置uuid属性
             
-            # 创建布局前检查dialog是否有效
+            # 确保对话框可见
             if not dialog.isVisible():
                 dialog.show()
             
@@ -363,30 +405,22 @@ class ECSTabWidget(QTabWidget):
         finally:
             print(f"结束AddNewLable，对话框类型为：{type(dialog)}，对话框uuid为：{struuid}")
             
-    def findTabIndexByUuid(self, struuid):
+    def removeTab(self, index):
         """
-        根据UUID查找标签页索引
-        Args:
-            struuid: 要查找的UUID
-        Returns:
-            找到的标签页索引，如果没找到返回-1
+        重写removeTab方法，隐藏对话框而不是销毁它
         """
-        try:
-            for index in range(self.count()):
-                tab = self.widget(index)
-                if tab and tab.property("uuid") == struuid:
-                    return index
-            return -1
-        except Exception as e:
-            print(f"查找标签页时发生错误: {str(e)}")
-            return -1
-    # endregion 添加新的标签页
-
-    # region 根据索引移除标签页
-    #移除特定标签页，根据索引来移除，index是要移除的标签的索引。标签页的索引从开始计数。
-    def removeTabByIndex(self, index):
-
-        self.removeTab(index)
+        tab = self.widget(index)
+        if tab:
+            uuid = tab.property("uuid")
+            if uuid:
+                # 从显示集合中移除UUID
+                self.uuid_set.discard(uuid)
+                # 获取对话框实例并隐藏它
+                dialog = self.m_dialog_uuid_map.get(uuid)
+                if dialog:
+                    dialog.hide()  # 隐藏对话框而不是关闭
+                # 保持对话框实例在映射中，不再移除
+        super().removeTab(index)
     # endregion
     #移除其它的标签页
     def remove_other_tabs(self):
