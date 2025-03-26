@@ -276,44 +276,87 @@ class ECSTabWidget(QTabWidget):
     # region 添加新的标签页
         #strName为标签的名字，dialog为QWidget对话框，如何对话框存在，则切换对话框，如果对话框不存在，则新添一个对话框
     def AddNewLable(self,strName,dialog,struuid=None):#默认添加的是QWidget
-        #移除标签页中的对话框，从self.uuid_list中移除对应的uuid
-        #双击左侧项目树的节点：获取uuid，如果self.uuid_list中有对应的uuid，找到uuid对应的标签索引，显示这个索引
-        #如果如果self.uuid_list没有对应的uuid，添加对应的标签页和对话框，对话框从self.m_dialog_uuid_map.get(struuid)获取
+        """
+        添加新的标签页或切换到已存在的标签页
+        Args:
+            strName: 标签页名称
+            dialog: 对话框实例
+            struuid: 对话框的UUID
+        Returns:
+            新添加的标签页索引或已存在标签页的索引
+        """
         print(f"开始AddNewLable，对话框名字为{strName}，对话框uuid为：{struuid}")
-        if isinstance(dialog, QWidget):
-            if struuid in self.uuid_set:#显示的对话框中有这个元素
+        
+        if not isinstance(dialog, QWidget):
+            print(f"错误：对话框必须是QWidget类型，当前类型为：{type(dialog)}")
+            return -1
+            
+        try:
+            if struuid in self.uuid_set:  # 显示的对话框中有这个元素
                 print(f"Table已经添加了ID为：{struuid}，名字为{strName}的对话框")
-                # 根据uuid查找对应的对话框
-                dialog = self.m_dialog_uuid_map.get(struuid)
-                if dialog is not None:
-                    index=self.findTabIndexByUuid(struuid)
-                    if index is not -1:
-                        self.m_index=index
-                        self.setCurrentIndex(index)  # 显示当前的标签页
-                else:
-                    return
-                #让tab页面切换到对应的对话框
-            else:#显示的页面没有这个对话框
-                print(f"Table未添加ID为：{struuid}，名字为：{strName}的对话框")
-                tab = QWidget()#定义一个标签
-                tab.setProperty("uuid", struuid)#给标签设置uuid属性
-                tab_layout = QVBoxLayout()#定义一个竖直的布局
-                tab_label = dialog#定义附件的控件或者对话框的类型
-                tab_layout.addWidget(tab_label)#竖向布局添加对应的对话框
-                tab.setLayout(tab_layout)#变迁添加对应的布局
-                index=self.addTab(tab, strName)#将标签添加到
-                print(f"标签页的ID为：{index}")
-                self.uuid_set.add(struuid)#给标签页添加对应的str_uuid
-                print(f"uuid_set添加了struuid：{struuid}")
-                self.m_dialog_uuid_map[struuid] = dialog  # 存储uuid和对应的对话框实例
-                print(f"m_dialog_uuid_map添加了dialog：{struuid}")
-                if index:
-                    print(f"新添加的标签页ID为：{index}")
-                    self.m_index=index
-                    print(f"开始：设置{index}为当前的ID")
+                # 查找已存在的标签页
+                index = self.findTabIndexByUuid(struuid)
+                if index != -1:
+                    print(f"找到已存在的标签页，索引为：{index}")
+                    self.m_index = index
                     self.setCurrentIndex(index)  # 显示当前的标签页
-                    print(f"结束：设置{index}为当前的ID")
-        print(f"结束AddNewLable，对话框类型为：{type(dialog)}，对话框uuid为：{struuid}")
+                    return index
+                else:
+                    print(f"警告：UUID在集合中但找不到对应的标签页")
+                    self.uuid_set.remove(struuid)  # 清理不一致的状态
+            
+            # 创建新的标签页
+            print(f"Table未添加ID为：{struuid}，名字为：{strName}的对话框")
+            tab = QWidget()  # 定义一个标签
+            tab.setProperty("uuid", struuid)  # 给标签设置uuid属性
+            
+            # 创建布局前检查dialog是否有效
+            if not dialog.isVisible():
+                dialog.show()
+            
+            tab_layout = QVBoxLayout()  # 定义一个竖直的布局
+            tab_layout.addWidget(dialog)  # 竖向布局添加对应的对话框
+            tab.setLayout(tab_layout)  # 标签添加对应的布局
+            
+            # 添加新标签页
+            index = self.addTab(tab, strName)
+            if index >= 0:
+                print(f"成功添加新标签页，ID为：{index}")
+                self.uuid_set.add(struuid)  # 给标签页添加对应的str_uuid
+                self.m_dialog_uuid_map[struuid] = dialog  # 存储uuid和对应的对话框实例
+                self.m_index = index
+                self.setCurrentIndex(index)  # 显示当前的标签页
+                return index
+            else:
+                print("错误：添加标签页失败")
+                return -1
+                
+        except Exception as e:
+            print(f"添加标签页时发生错误: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return -1
+            
+        finally:
+            print(f"结束AddNewLable，对话框类型为：{type(dialog)}，对话框uuid为：{struuid}")
+            
+    def findTabIndexByUuid(self, struuid):
+        """
+        根据UUID查找标签页索引
+        Args:
+            struuid: 要查找的UUID
+        Returns:
+            找到的标签页索引，如果没找到返回-1
+        """
+        try:
+            for index in range(self.count()):
+                tab = self.widget(index)
+                if tab and tab.property("uuid") == struuid:
+                    return index
+            return -1
+        except Exception as e:
+            print(f"查找标签页时发生错误: {str(e)}")
+            return -1
     # endregion 添加新的标签页
 
     # region 根据索引移除标签页
@@ -335,6 +378,20 @@ class ECSTabWidget(QTabWidget):
                 self.removeTab(index)
                 break
     # endregion
+
+    def find_tab_by_uuid(self, target_uuid):
+        """
+        根据UUID查找对应的标签页索引
+        Args:
+            target_uuid: 要查找的UUID
+        Returns:
+            找到的标签页索引，如果没找到返回-1
+        """
+        for i in range(self.count()):
+            widget = self.widget(i)
+            if widget and widget.property("uuid") == target_uuid:
+                return i
+        return -1
 
 def main():
     import sys

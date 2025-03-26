@@ -342,21 +342,36 @@ class CalculateDockWidget(QDockWidget):
     def on_item_double_clicked(self, item):
         # 获取关联的UUID
         struuid = item.data(Qt.UserRole)
-        mainframe=self.parent()#获取父窗口
+        mainframe = self.parent()  # 获取父窗口
         if mainframe:
-            Table_bar=mainframe.m_ECST#获取Table_Bar
-            dialog=Table_bar.get_dialog_by_uuid(struuid)#根据uuid获取对话框
-            dialogname=None
-            if dialog:
-                dialogname=dialog.m_name
-                print(f"双击的对话框名字为：{dialogname}")
-            if dialogname:
-                index = Table_bar.AddNewLable(dialogname, dialog, struuid)  # 给上面添加标签页
+            Table_bar = mainframe.m_ECST  # 获取Table_Bar
+            if Table_bar:
+                # 检查是否已经存在相同UUID的标签页
+                existing_index = Table_bar.find_tab_by_uuid(struuid)
+                if existing_index != -1:
+                    # 如果已存在，切换到该标签页
+                    Table_bar.setCurrentIndex(existing_index)
+                    return
 
-        # 双击的时候如果已经附件了对话框 就不要重复添加了
-
-        #通过标签页对话框获取uuid对应的对话框 然后将对话框附加到标签页 self.m_dialog_uuid_map = {}  # 存储对话框的uuid和对应的对话框实例的字典
-
+                # 获取对话框
+                dialog = Table_bar.get_dialog_by_uuid(struuid)
+                if dialog:
+                    dialogname = dialog.m_name
+                    print(f"双击的对话框名字为：{dialogname}")
+                    
+                    # 确保对话框是可见的
+                    dialog.show()
+                    
+                    # 添加新标签页并切换到该标签页
+                    index = Table_bar.AddNewLable(dialogname, dialog, struuid)
+                    if index != -1:
+                        Table_bar.setCurrentIndex(index)
+                else:
+                    print(f"无法找到UUID为{struuid}的对话框")
+            else:
+                print("无法获取标签栏对象")
+        else:
+            print("无法获取主窗口对象")
 
     #给根目录下添加节点
     def add_item_by_name(self, item_name,struuid):
