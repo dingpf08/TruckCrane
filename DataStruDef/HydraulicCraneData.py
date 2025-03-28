@@ -21,9 +21,9 @@ class HydraulicCraneData(EngineeringDataBase):
     working_radius_method: str = "智能确定"  # 工作幅度确定方法
     min_working_radius: float = 4.0  # 场地要求的最小工作幅度(m)
     
-    # 安全距离参数
-    horizontal_distance: float = 1.0  # 特性弧线最高吊钩中心的水平距离b(m)
-    min_safety_distance: float = 1.0  # 安装构件边缘距起重臂中心的最小安全距离L(m)
+    # 吊物与起重臂安全距离复核参数
+    edge_distance: float = 1.0  # 构件边缘距起重臂距离(m)
+    safety_distance: float = 1.0  # 安装构件边缘距起重臂中心的最小安全距离ε(m)
     
     # 计算结果和状态
     is_calculated: bool = False  # 是否已经计算
@@ -38,5 +38,5 @@ class HydraulicCraneData(EngineeringDataBase):
                 f"最小臂距: {self.min_boom_distance}m\n"
                 f"工作幅度方法: {self.working_radius_method}\n"
                 f"最小工作幅度: {self.min_working_radius}m\n"
-                f"水平距离: {self.horizontal_distance}m\n"
-                f"最小安全距离: {self.min_safety_distance}m") 
+                f"构件边缘距起重臂距离: {self.edge_distance}m\n"
+                f"最小安全距离: {self.safety_distance}m") 

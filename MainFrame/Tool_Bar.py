@@ -16,15 +16,20 @@ class ToolBar(QToolBar):
         new_action = QAction('新建', self)
         open_action = QAction('打开', self)
         close_action = QAction('退出', self)
+        crane_settings_action = QAction('起重机械设置', self)  # 新增起重机械设置按钮
+        
         # 绑定事件
         open_action.triggered.connect(self.open_file)
         close_action.triggered.connect(self.exit_application)
+        crane_settings_action.triggered.connect(self.show_crane_settings)  # 绑定新事件
+        
         self.addAction(new_action)
         self.addAction(open_action)
+        self.addAction(crane_settings_action)  # 添加新按钮
         self.addAction(close_action)
 
     def exit_application(self):
-        print(f"点击了“工具栏的退出”按钮")
+        print('点击了"工具栏的退出"按钮')
         if isinstance(self.parent(), QMainWindow):
             # 如果父窗口是 MainWindow 实例,调用 SaveBeforClose 方法
             if self.parent().SaveBeforeClose():
@@ -57,6 +62,16 @@ class ToolBar(QToolBar):
                 self.UpdateUiAndData(self.m_dialog_data_map)#根据数据更新对话框界面和各个子控件的数据
             except Exception as e:
                 QMessageBox.warning(self, "错误", f"加载文件失败: {e}")
+
+    def show_crane_settings(self):
+        """显示起重机械设置对话框"""
+        try:
+            from Dialogs.CraneSettingsDialog import CraneSettingsDialog
+            dialog = CraneSettingsDialog(self)
+            dialog.exec_()
+        except Exception as e:
+            print(f"Error in show_crane_settings: {e}")
+            QMessageBox.critical(self, "错误", f"显示起重机械设置对话框时发生错误: {e}")
 
 
 if __name__ == '__main__':
