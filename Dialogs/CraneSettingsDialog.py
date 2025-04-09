@@ -1,15 +1,20 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QWidget,
                            QComboBox, QLabel, QGridLayout, QGroupBox,
                            QPushButton, QTableWidget, QTableWidgetItem,
-                           QHeaderView, QTabWidget, QLineEdit, QCheckBox)
+                           QHeaderView, QTabWidget, QLineEdit, QCheckBox,
+                           QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 import os
+import sqlite3
 #主臂起重性能表
 # 获取当前文件所在目录的路径
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))#D:\Cache\ztzp-ConCaSys\Dialogs
 # 获取项目根目录的路径
-ROOT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
+ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))#D:\Cache\ztzp-ConCaSys
+
+print(f"CURRENT_DIR: {CURRENT_DIR}")
+print(f"ROOT_DIR: {ROOT_DIR}")
 
 class CraneSettingsDialog(QDialog):
     """起重机械设置主对话框"""
@@ -20,6 +25,21 @@ class CraneSettingsDialog(QDialog):
     def init_ui(self):
         self.setWindowTitle("起重机械设置")
         self.resize(800, 600)
+        
+        # Initialize custom_tab
+        self.custom_tab = CraneCustomTab()
+        
+        # Connect to the database
+        db_path = os.path.join(ROOT_DIR, 'CraneDataBase')#注意我的数据库没有后缀
+        print(f"Database path: {db_path}")
+        try:
+            self.connection = sqlite3.connect(db_path)
+            self.cursor = self.connection.cursor()
+            # Fetch data from the database
+            self.fetch_data_from_db()
+        except sqlite3.Error as e:
+            print(f"Database connection error: {e}")
+            QMessageBox.critical(self, "Database Error", f"Failed to connect to the database: {e}")
         
         # 创建主布局
         layout = QVBoxLayout()
@@ -43,6 +63,25 @@ class CraneSettingsDialog(QDialog):
         # 连接信号
         self.custom_tab.crane_selected.connect(self.on_crane_selected)
         
+    def fetch_data_from_db(self):
+        """Fetch crane data from the database and populate the table."""
+        query = """
+        SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
+        FROM TruckCrane
+        """
+
+        self.cursor.execute(query)
+        data = self.cursor.fetchall()
+
+        # Format data for display
+        data_str = "\n".join([f"Model: {model}, Manufacturer: {manufacturer}, Capacity: {capacity}" for model, manufacturer, capacity in data])
+
+        # Display data in a message box
+        QMessageBox.information(self, "Fetched Data", data_str)
+
+        # Populate the table with data
+        self.custom_tab.populate_table(data)
+
     def on_crane_selected(self, model):
         """当选择了起重机型号时，更新起重能力表标签页名称"""
         self.capacity_tab.update_crane_model(model)
@@ -52,14 +91,14 @@ class CraneSettingsDialog(QDialog):
 class CraneCustomTab(QWidget):
     """起重机自定义标签页"""
     crane_selected = pyqtSignal(str)
-    
+
     def __init__(self):
         super().__init__()
         self.init_ui()
-        
+
     def init_ui(self):
         main_layout = QVBoxLayout()
-        
+
         # 顶部区域 - 起重机类型选择
         top_layout = QHBoxLayout()
         top_layout.addWidget(QLabel("起重机种类:"))
@@ -69,20 +108,20 @@ class CraneCustomTab(QWidget):
         top_layout.addWidget(self.crane_type_combo)
         top_layout.addStretch()
         main_layout.addLayout(top_layout)
-        
+
         # 中间区域 - 表格
         self.table = QTableWidget()
         self.init_table()
         main_layout.addWidget(self.table)
-        
+
         # 底部区域 - 分为左右两部分
         bottom_layout = QHBoxLayout()
-        
+
         # 左侧 - 图片区域
         left_widget = QWidget()
         left_layout = QVBoxLayout()
         image_label = QLabel()
-        
+
         # 使用相对于项目根目录的路径加载图片
         image_path = os.path.join(CURRENT_DIR, "PIC", "CranePic.png")
         pixmap = QPixmap(image_path)
@@ -97,46 +136,46 @@ class CraneCustomTab(QWidget):
             print(f"Failed to load image from: {image_path}")
             print(f"Current directory: {CURRENT_DIR}")
             print(f"Image path attempted: {image_path}")
-        
+
         left_layout.addWidget(image_label)
         left_widget.setLayout(left_layout)
         left_widget.setMinimumWidth(400)
         bottom_layout.addWidget(left_widget)
-        
+
         # 右侧 - 参数输入区域
         right_layout = QGridLayout()
-        
+
         # 起重机信息输入
         right_layout.addWidget(QLabel("起重机厂家:"), 0, 0)
         self.manufacturer_edit = QLineEdit()
         right_layout.addWidget(self.manufacturer_edit, 0, 1)
-        
+
         right_layout.addWidget(QLabel("起重机型号:"), 1, 0)
         self.model_edit = QLineEdit()
         right_layout.addWidget(self.model_edit, 1, 1)
-        
+
         # 添加复选框
         self.calc_checkbox = QCheckBox("输入汽车起重机轴距及轴荷计算")
         right_layout.addWidget(self.calc_checkbox, 2, 0, 1, 2)
-        
+
         # 轴距及轴荷组
         axle_group = QGroupBox("起重机轴距及轴荷")
         axle_layout = QGridLayout()
-        
+
         axle_layout.addWidget(QLabel("汽车起重机轴数:"), 0, 0)
         self.axle_count_edit = QLineEdit()
         axle_layout.addWidget(self.axle_count_edit, 0, 1)
-        
+
         axle_layout.addWidget(QLabel("第1排车轮荷载(吨):"), 1, 0)
         self.first_axle_load_edit = QLineEdit()
         axle_layout.addWidget(self.first_axle_load_edit, 1, 1)
-        
+
         # 添加轴距表格
         self.axle_table = QTableWidget()
         self.axle_table.setColumnCount(3)
         self.axle_table.setHorizontalHeaderLabels(["第排车轮", "依次轴距(mm)", "轴荷(吨)"])
         self.axle_table.setRowCount(2)
-        
+
         # 设置示例数据
         self.axle_table.setItem(0, 0, QTableWidgetItem("2"))
         self.axle_table.setItem(0, 1, QTableWidgetItem("4760"))
@@ -144,9 +183,9 @@ class CraneCustomTab(QWidget):
         self.axle_table.setItem(1, 0, QTableWidgetItem("3"))
         self.axle_table.setItem(1, 1, QTableWidgetItem("1360"))
         self.axle_table.setItem(1, 2, QTableWidgetItem("13.000"))
-        
+
         axle_layout.addWidget(self.axle_table, 2, 0, 1, 2)
-        
+
         # 添加其他参数输入
         params = [
             ("起重机总重(吨):", "34.1"),
@@ -156,7 +195,7 @@ class CraneCustomTab(QWidget):
             ("主臂铰链中心至地面距离h(m):", "3.05"),
             ("主臂铰链中心至回转中心距离a1(m):", "1.6")
         ]
-        
+
         for i, (label, value) in enumerate(params):
             axle_layout.addWidget(QLabel(label), i + 3, 0)
             if label == "是否录入额定起重量表:":
@@ -166,35 +205,35 @@ class CraneCustomTab(QWidget):
             else:
                 edit = QLineEdit(value)
                 axle_layout.addWidget(edit, i + 3, 1)
-        
+
         axle_group.setLayout(axle_layout)
         right_layout.addWidget(axle_group, 3, 0, 1, 2)
-        
+
         # 将右侧布局添加到底部布局
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
         bottom_layout.addWidget(right_widget)
-        
+
         main_layout.addLayout(bottom_layout)
-        
+
         # 注释说明
         note_label = QLabel("注：表中淡灰色文字为官方数据，官方数据不可修改！")
         main_layout.addWidget(note_label)
-        
+
         self.setLayout(main_layout)
-        
+
         # 设置表格选择模式为整行选择
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setSelectionMode(QTableWidget.SingleSelection)
-        
+
         # 连接信号
         self.table.itemClicked.connect(self.on_item_clicked)  # 改用clicked信号而不是doubleClicked
-        
+
     def init_table(self):
         """初始化表格"""
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["起重机厂家", "起重机型号", "最大额定起重量(吨)"])
-        
+
         # 添加示例数据
         data = [
             ("三一", "STC120T5-1", "12"),
@@ -207,33 +246,33 @@ class CraneCustomTab(QWidget):
             ("三一", "STC250T4", "25"),
             ("三一", "STC350C5-1", "35")
         ]
-        
+
         self.table.setRowCount(len(data))
-        
+
         # 设置表格的最小高度，确保能显示8行
         row_height = 30  # 每行高度
         header_height = 30  # 表头高度
         min_visible_rows = 8  # 最少显示8行
         min_height = row_height * min_visible_rows + header_height
         self.table.setMinimumHeight(min_height)
-        
+
         # 设置每行的高度
         for i in range(self.table.rowCount()):
             self.table.setRowHeight(i, row_height)
-        
+
         # 填充数据并设置为不可编辑
         for i, (manufacturer, model, capacity) in enumerate(data):
             for j, value in enumerate([manufacturer, model, capacity]):
                 item = QTableWidgetItem(value)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 设置为不可编辑
                 self.table.setItem(i, j, item)
-        
+
         # 设置表格整体为不可编辑
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        
+
         # 调整列宽
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        
+
         # 设置表格样式
         self.table.setStyleSheet("""
             QTableWidget::item:selected {
@@ -241,7 +280,7 @@ class CraneCustomTab(QWidget):
                 color: white;
             }
         """)
-        
+
     def on_item_clicked(self, item):
         """当点击表格项时"""
         row = item.row()
@@ -250,6 +289,19 @@ class CraneCustomTab(QWidget):
         
         # 选中整行
         self.table.selectRow(row)
+
+    def populate_table(self, data):
+        """Populate the table with data from the database."""
+        self.table.setRowCount(len(data))
+        for i, (model, manufacturer, capacity) in enumerate(data):
+            for j, value in enumerate([manufacturer, model, capacity]):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 设置为不可编辑
+                self.table.setItem(i, j, item)
+        
+        # Adjust table settings
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
