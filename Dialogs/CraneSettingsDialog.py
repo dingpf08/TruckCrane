@@ -7,6 +7,34 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 import os
 import sqlite3
+# 起重机械设置对话框的数据流和逻辑
+#
+# 1. 初始化：
+#    - 初始化 CraneSettingsDialog，设置 UI 并连接到数据库。
+#
+# 2. 数据库连接：
+#    - 使用从 ROOT_DIR 构建的路径连接到 SQLite 数据库。
+#    - 使用 fetch_data_from_db 方法从 TruckCrane 表中获取数据。
+#
+# 3. 数据存储：
+#    - 将获取的数据存储在 self.data 成员变量中。
+#
+# 4. UI 设置：
+#    - 创建主布局和标签页控件。
+#    - 初始化 CraneCustomTab 和 CraneCapacityTab，并将数据传递给 CraneCustomTab。
+#
+# 5. 表格初始化：
+#    - CraneCustomTab 使用 init_table 方法用数据填充表格。
+#
+# 6. 信号连接：
+#    - 连接用户交互的信号，例如选择起重机型号。
+#
+# 7. 用户交互：
+#    - 当选择起重机型号时，更新 CraneSettingsDialog 中的标签页名称。
+#
+# 8. 错误处理：
+#    - 如果数据库连接失败，显示错误消息。
+
 #主臂起重性能表
 # 获取当前文件所在目录的路径
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))#D:\Cache\ztzp-ConCaSys\Dialogs
