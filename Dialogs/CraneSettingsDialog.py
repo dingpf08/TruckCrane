@@ -20,23 +20,23 @@ class CraneSettingsDialog(QDialog):
     """起重机械设置主对话框"""
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.data = []  # Initialize data as a member variable
         self.init_ui()
         
     def init_ui(self):
         self.setWindowTitle("起重机械设置")
         self.resize(800, 600)
         
-        # Initialize custom_tab
-        self.custom_tab = CraneCustomTab()
-        
         # Connect to the database
-        db_path = os.path.join(ROOT_DIR, 'CraneDataBase')#注意我的数据库没有后缀
+        db_path = os.path.join(ROOT_DIR, 'CraneDataBase')  # Adjusted for no extension
         print(f"Database path: {db_path}")
+        
         try:
             self.connection = sqlite3.connect(db_path)
             self.cursor = self.connection.cursor()
+            
             # Fetch data from the database
-            self.fetch_data_from_db()
+            self.data = self.fetch_data_from_db()
         except sqlite3.Error as e:
             print(f"Database connection error: {e}")
             QMessageBox.critical(self, "Database Error", f"Failed to connect to the database: {e}")
@@ -48,7 +48,7 @@ class CraneSettingsDialog(QDialog):
         self.tab_widget = QTabWidget()
         
         # 创建两个标签页内容
-        self.custom_tab = CraneCustomTab()
+        self.custom_tab = CraneCustomTab(self.data)  # Pass data to CraneCustomTab
         self.capacity_tab = CraneCapacityTab()
         
         # 添加标签页
@@ -64,12 +64,11 @@ class CraneSettingsDialog(QDialog):
         self.custom_tab.crane_selected.connect(self.on_crane_selected)
         
     def fetch_data_from_db(self):
-        """Fetch crane data from the database and populate the table."""
+        """Fetch crane data from the database."""
         query = """
         SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
         FROM TruckCrane
         """
-
         self.cursor.execute(query)
         data = self.cursor.fetchall()
 
@@ -79,8 +78,7 @@ class CraneSettingsDialog(QDialog):
         # Display data in a message box
         QMessageBox.information(self, "Fetched Data", data_str)
 
-        # Populate the table with data
-        self.custom_tab.populate_table(data)
+        return data
 
     def on_crane_selected(self, model):
         """当选择了起重机型号时，更新起重能力表标签页名称"""
@@ -92,8 +90,9 @@ class CraneCustomTab(QWidget):
     """起重机自定义标签页"""
     crane_selected = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, data):
         super().__init__()
+        self.data = data  # Store data as a member variable
         self.init_ui()
 
     def init_ui(self):
@@ -111,7 +110,7 @@ class CraneCustomTab(QWidget):
 
         # 中间区域 - 表格
         self.table = QTableWidget()
-        self.init_table()
+        self.init_table(self.data)  # Pass self.data to init_table
         main_layout.addWidget(self.table)
 
         # 底部区域 - 分为左右两部分
@@ -229,23 +228,10 @@ class CraneCustomTab(QWidget):
         # 连接信号
         self.table.itemClicked.connect(self.on_item_clicked)  # 改用clicked信号而不是doubleClicked
 
-    def init_table(self):
-        """初始化表格"""
+    def init_table(self, data):
+        """Initialize the table with data from the database."""
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["起重机厂家", "起重机型号", "最大额定起重量(吨)"])
-
-        # 添加示例数据
-        data = [
-            ("三一", "STC120T5-1", "12"),
-            ("三一", "STC250", "25"),
-            ("三一", "STC250C5-2", "25"),
-            ("三一", "STC250E-1", "25"),
-            ("三一", "STC250E5-1", "25"),
-            ("三一", "STC250E5-2", "25"),
-            ("三一", "STC250H", "25"),
-            ("三一", "STC250T4", "25"),
-            ("三一", "STC350C5-1", "35")
-        ]
 
         self.table.setRowCount(len(data))
 
@@ -256,14 +242,10 @@ class CraneCustomTab(QWidget):
         min_height = row_height * min_visible_rows + header_height
         self.table.setMinimumHeight(min_height)
 
-        # 设置每行的高度
-        for i in range(self.table.rowCount()):
-            self.table.setRowHeight(i, row_height)
-
         # 填充数据并设置为不可编辑
-        for i, (manufacturer, model, capacity) in enumerate(data):
+        for i, (model, manufacturer, capacity) in enumerate(data):
             for j, value in enumerate([manufacturer, model, capacity]):
-                item = QTableWidgetItem(value)
+                item = QTableWidgetItem(str(value))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 设置为不可编辑
                 self.table.setItem(i, j, item)
 
@@ -289,19 +271,6 @@ class CraneCustomTab(QWidget):
         
         # 选中整行
         self.table.selectRow(row)
-
-    def populate_table(self, data):
-        """Populate the table with data from the database."""
-        self.table.setRowCount(len(data))
-        for i, (model, manufacturer, capacity) in enumerate(data):
-            for j, value in enumerate([manufacturer, model, capacity]):
-                item = QTableWidgetItem(str(value))
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 设置为不可编辑
-                self.table.setItem(i, j, item)
-        
-        # Adjust table settings
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
