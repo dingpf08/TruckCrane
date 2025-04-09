@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@exoticknight/mcp-file-merger": "^1.0.1"
+  }
+}

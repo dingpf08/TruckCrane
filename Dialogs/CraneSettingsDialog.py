@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QWidget,
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 import os
-
+#主臂起重性能表
 # 获取当前文件所在目录的路径
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # 获取项目根目录的路径
@@ -255,7 +255,7 @@ class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
     def __init__(self):
         super().__init__()
-        self.crane_model = "STC120T5-1"  # 默认型号
+        self.Str_crane_modelName = "STC120T5-1"  # 默认的起重机型号名称
         self.init_ui()
         
     def init_ui(self):
@@ -271,10 +271,50 @@ class CraneCapacityTab(QWidget):
         top_layout.addStretch()
         main_layout.addLayout(top_layout)
         
+        # 创建标签页控件
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setVisible(False)  # 初始设置为不可见
+        
+        # 创建主臂起重性能表标签页
+        self.main_boom_tab = QWidget()
+        self.init_main_boom_tab()
+        self.tab_widget.addTab(self.main_boom_tab, "主臂起重性能表")
+        
+        # 创建主臂+副臂起重性能表标签页
+        self.combined_boom_tab = QWidget()
+        self.init_combined_boom_tab()
+        self.tab_widget.addTab(self.combined_boom_tab, "主臂+副臂起重性能表")
+        
+        # 创建主要内容区域（非标签页模式）
+        self.main_content = QWidget()
+        self.init_main_content()
+        
+        main_layout.addWidget(self.main_content)
+        main_layout.addWidget(self.tab_widget)
+        
+        # 底部说明文字
+        note_text = ("注：本数据库操作方式：\n"
+                    "（官方数据不可修改，自定义数据可修改）：\n"
+                    "1、左侧保装工况装格输入具体装置工况（比如配重情况、支腿\n"
+                    "外伸情况）等，根据右侧可增加删除工况。\n"
+                    "2、选定工况，在右侧表格相录入当前工况下起重机额定起重量。\n"
+                    "3、右侧额定起重量表格可通过鼠标右键：增加行、删除行、\n"
+                    "增加列、删除列。\n"
+                    "4、最后点击窗口下方'保存额定起重量'按钮。")
+        note_label = QLabel(note_text)
+        main_layout.addWidget(note_label)
+        
+        self.setLayout(main_layout)
+        
+        # 连接信号
+        self.condition_combo.currentTextChanged.connect(self.on_condition_changed)
+        
+    def init_main_content(self):
+        """初始化主要内容区域（非标签页模式）"""
+        layout = QVBoxLayout()
+        
         # 主臂起重性能表组
         main_group = QGroupBox("主臂起重性能表")
-        main_layout.addWidget(main_group)
-        
         group_layout = QVBoxLayout()
         
         # 额定起重量确定方法
@@ -295,11 +335,128 @@ class CraneCapacityTab(QWidget):
         
         # 工况表格
         self.condition_table = QTableWidget()
-        self.condition_table.setColumnCount(2)
-        self.condition_table.setHorizontalHeaderLabels(["工况", "具体工况"])
-        self.condition_table.setRowCount(2)
+        self.init_condition_table(self.condition_table)
+        left_layout.addWidget(self.condition_table)
+        left_layout.addStretch()
         
-        # 设置表格数据并设置为不可编辑
+        # 右侧 - 起重能力表
+        right_layout = QVBoxLayout()
+        title_label = QLabel("工况1【配重1.2t，支腿全伸】额定起重量(吨)")
+        right_layout.addWidget(title_label)
+        
+        self.capacity_table = QTableWidget()
+        self.init_capacity_table(self.capacity_table)
+        right_layout.addWidget(self.capacity_table)
+        
+        content_layout.addLayout(left_layout, 1)
+        content_layout.addLayout(right_layout, 3)
+        
+        group_layout.addLayout(content_layout)
+        main_group.setLayout(group_layout)
+        layout.addWidget(main_group)
+        
+        self.main_content.setLayout(layout)
+        
+    def init_main_boom_tab(self):
+        """初始化主臂起重性能表标签页"""
+        layout = QVBoxLayout()
+        
+        # 复制主要内容的布局
+        main_group = QGroupBox("主臂起重性能表")
+        group_layout = QVBoxLayout()
+        
+        # 额定起重量确定方法
+        method_layout = QHBoxLayout()
+        method_layout.addWidget(QLabel("额定起重量确定方法:"))
+        method_combo = QComboBox()
+        method_combo.addItem("根据幅度、主臂长确定")
+        method_layout.addWidget(method_combo)
+        method_layout.addStretch()
+        group_layout.addLayout(method_layout)
+        
+        # 主要内容区域 - 左右分布
+        content_layout = QHBoxLayout()
+        
+        # 左侧 - 工况列表
+        left_layout = QVBoxLayout()
+        left_layout.addWidget(QLabel("主臂吊装工况:"))
+        
+        condition_table = QTableWidget()
+        self.init_condition_table(condition_table)
+        left_layout.addWidget(condition_table)
+        left_layout.addStretch()
+        
+        # 右侧 - 起重能力表
+        right_layout = QVBoxLayout()
+        title_label = QLabel("工况1【配重1.2t，支腿全伸】额定起重量(吨)")
+        right_layout.addWidget(title_label)
+        
+        capacity_table = QTableWidget()
+        self.init_capacity_table(capacity_table)
+        right_layout.addWidget(capacity_table)
+        
+        content_layout.addLayout(left_layout, 1)
+        content_layout.addLayout(right_layout, 3)
+        
+        group_layout.addLayout(content_layout)
+        main_group.setLayout(group_layout)
+        layout.addWidget(main_group)
+        
+        self.main_boom_tab.setLayout(layout)
+        
+    def init_combined_boom_tab(self):
+        """初始化主臂+副臂起重性能表标签页"""
+        layout = QVBoxLayout()
+        
+        # 主臂+副臂起重性能表组
+        main_group = QGroupBox("主臂+副臂起重性能表")
+        group_layout = QVBoxLayout()
+        
+        # 额定起重量确定方法
+        method_layout = QHBoxLayout()
+        method_layout.addWidget(QLabel("额定起重量确定方法:"))
+        method_combo = QComboBox()
+        method_combo.addItem("根据幅度、主臂长、副臂长度、副臂安装角度确定")
+        method_layout.addWidget(method_combo)
+        method_layout.addStretch()
+        group_layout.addLayout(method_layout)
+        
+        # 主要内容区域 - 左右分布
+        content_layout = QHBoxLayout()
+        
+        # 左侧 - 工况列表
+        left_layout = QVBoxLayout()
+        left_layout.addWidget(QLabel("主臂+副臂吊装工况:"))
+        
+        condition_table = QTableWidget()
+        self.init_condition_table(condition_table)
+        left_layout.addWidget(condition_table)
+        left_layout.addStretch()
+        
+        # 右侧 - 起重能力表
+        right_layout = QVBoxLayout()
+        title_label = QLabel("工况1【配重6.2吨，副臂长度8m，副臂安装角度0°，支腿全伸】额定起重量(吨)")
+        right_layout.addWidget(title_label)
+        
+        capacity_table = QTableWidget()
+        self.init_capacity_table(capacity_table, is_combined=True)
+        right_layout.addWidget(capacity_table)
+        
+        content_layout.addLayout(left_layout, 1)
+        content_layout.addLayout(right_layout, 3)
+        
+        group_layout.addLayout(content_layout)
+        main_group.setLayout(group_layout)
+        layout.addWidget(main_group)
+        
+        self.combined_boom_tab.setLayout(layout)
+        
+    def init_condition_table(self, table):
+        """初始化工况表格"""
+        table.setColumnCount(2)
+        table.setHorizontalHeaderLabels(["工况", "具体工况"])
+        table.setRowCount(2)
+        
         conditions = [
             ("1", "配重1.2t，支腿全伸"),
             ("2", "配重1.2t，支腿半伸")
@@ -308,121 +465,96 @@ class CraneCapacityTab(QWidget):
         for i, (condition, detail) in enumerate(conditions):
             item1 = QTableWidgetItem(condition)
             item2 = QTableWidgetItem(detail)
-            # 设置为不可编辑
             item1.setFlags(item1.flags() & ~Qt.ItemIsEditable)
             item2.setFlags(item2.flags() & ~Qt.ItemIsEditable)
-            self.condition_table.setItem(i, 0, item1)
-            self.condition_table.setItem(i, 1, item2)
+            table.setItem(i, 0, item1)
+            table.setItem(i, 1, item2)
         
-        # 设置表格整体为不可编辑
-        self.condition_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.setMinimumWidth(300)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
+        table.setColumnWidth(0, 50)
         
-        # 设置工况表格的样式和大小
-        self.condition_table.setMinimumWidth(300)  # 增加最小宽度
-        self.condition_table.horizontalHeader().setStretchLastSection(True)  # 最后一列自动拉伸
-        self.condition_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)  # 第一列固定宽度
-        self.condition_table.setColumnWidth(0, 50)  # 设置第一列的宽度
-        
-        left_layout.addWidget(self.condition_table)
-        left_layout.addStretch()
-        
-        # 右侧 - 起重能力表
-        right_layout = QVBoxLayout()
-        
-        # 标题行（工况1【配重1.2t，支腿全伸】额定起重量(吨)）
-        title_label = QLabel("工况1【配重1.2t，支腿全伸】额定起重量(吨)")
-        right_layout.addWidget(title_label)
-        
-        # 起重能力表格
-        self.capacity_table = QTableWidget()
-        self.init_capacity_table()
-        right_layout.addWidget(self.capacity_table)
-        
-        # 将左右布局添加到内容布局
-        content_layout.addLayout(left_layout, 1)  # 1是拉伸因子
-        content_layout.addLayout(right_layout, 3)  # 3是拉伸因子，使右侧占据更多空间
-        
-        group_layout.addLayout(content_layout)
-        main_group.setLayout(group_layout)
-        
-        # 底部说明文字
-        note_text = ("注：本数据库操作方式：\n"
-                    "（官方数据不可修改，自定义数据可修改）：\n"
-                    "1、左侧保装工况装格输入具体装置工况（比如配重情况、支腿\n"
-                    "外伸情况）等，根据右侧可增加删除工况。\n"
-                    "2、选定工况，在右侧表格相录入当前工况下起重机额定起重量。\n"
-                    "3、右侧额定起重量表格可通过鼠标右键：增加行、删除行、\n"
-                    "增加列、删除列。\n"
-                    "4、最后点击窗口下方'保存额定起重量'按钮。")
-        note_label = QLabel(note_text)
-        main_layout.addWidget(note_label)
-        
-        self.setLayout(main_layout)
-        
-    def init_capacity_table(self):
+    def init_capacity_table(self, table, is_combined=False):
         """初始化起重能力表"""
-        # 设置列数和标题
-        self.capacity_table.setColumnCount(7)
-        headers = ["幅度/主臂长(m)", "9.6", "15.08", "20.56", "26.04", "31.52", "37"]
-        self.capacity_table.setHorizontalHeaderLabels(headers)
+        if not is_combined:
+            # 主臂起重能力表
+            headers = ["幅度/主臂长(m)", "9.6", "15.08", "20.56", "26.04", "31.52", "37"]
+            table.setColumnCount(len(headers))
+            table.setHorizontalHeaderLabels(headers)
+            
+            data = [
+                ["3", "12", "10.8", "", "", "", ""],
+                ["3.5", "12", "10.8", "8.7", "", "", ""],
+                ["4", "11.7", "10.6", "8.7", "", "", ""],
+                ["4.5", "11.2", "10.4", "8.7", "6.8", "", ""],
+                ["5", "9", "9.2", "8.2", "6.8", "", ""],
+                ["5.5", "7.4", "7.6", "7.8", "6.7", "", ""],
+                ["6", "6.2", "6.4", "6.6", "6.2", "4.8", ""],
+                ["6.5", "5.2", "5.5", "5.7", "5.8", "4.8", ""],
+                ["7", "4.5", "4.7", "4.9", "5", "4.5", "3.5"],
+                ["8", "", "3.6", "3.8", "3.9", "3.9", "3.5"],
+                ["9", "", "2.9", "3", "3.1", "3.1", "3.2"],
+                ["10", "", "2.3", "2.4", "2.5", "2.6", "2.6"],
+                ["11", "", "1.8", "2", "2", "2.1", "2.1"],
+                ["12", "", "1.5", "1.6", "1.7", "1.7", "1.7"],
+                ["14", "", "", "1.1", "1.1", "1.2", "1.2"],
+                ["16", "", "", "0.7", "0.7", "0.8", "0.8"],
+                ["18", "", "", "0.4", "0.4", "0.5", "0.5"],
+                ["20", "", "", "", "", "", "0.3"]
+            ]
+        else:
+            # 主臂+副臂起重能力表
+            headers = ["幅度/主臂长(m)", "41"]
+            table.setColumnCount(len(headers))
+            table.setHorizontalHeaderLabels(headers)
+            
+            data = [
+                ["78", "2.8"],
+                ["75", "2.5"],
+                ["72", "2.2"],
+                ["70", "2"],
+                ["65", "1.6"],
+                ["60", "1"],
+                ["55", "0.6"],
+                ["50", "0.35"]
+            ]
         
-        # 设置行数和数据
-        data = [
-            ["3", "12", "10.8", "", "", "", ""],
-            ["3.5", "12", "10.8", "8.7", "", "", ""],
-            ["4", "11.7", "10.6", "8.7", "", "", ""],
-            ["4.5", "11.2", "10.4", "8.7", "6.8", "", ""],
-            ["5", "9", "9.2", "8.2", "6.8", "", ""],
-            ["5.5", "7.4", "7.6", "7.8", "6.7", "", ""],
-            ["6", "6.2", "6.4", "6.6", "6.2", "4.8", ""],
-            ["6.5", "5.2", "5.5", "5.7", "5.8", "4.8", ""],
-            ["7", "4.5", "4.7", "4.9", "5", "4.5", "3.5"],
-            ["8", "", "3.6", "3.8", "3.9", "3.9", "3.5"],
-            ["9", "", "2.9", "3", "3.1", "3.1", "3.2"],
-            ["10", "", "2.3", "2.4", "2.5", "2.6", "2.6"],
-            ["11", "", "1.8", "2", "2", "2.1", "2.1"],
-            ["12", "", "1.5", "1.6", "1.7", "1.7", "1.7"],
-            ["14", "", "", "1.1", "1.1", "1.2", "1.2"],
-            ["16", "", "", "0.7", "0.7", "0.8", "0.8"],
-            ["18", "", "", "0.4", "0.4", "0.5", "0.5"],
-            ["20", "", "", "", "", "", "0.3"]
-        ]
+        table.setRowCount(len(data))
         
-        self.capacity_table.setRowCount(len(data))
-        
-        # 填充数据并设置为不可编辑
         for i, row in enumerate(data):
             for j, value in enumerate(row):
                 item = QTableWidgetItem(value if value else "")
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 设置为不可编辑
-                self.capacity_table.setItem(i, j, item)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                table.setItem(i, j, item)
         
-        # 设置表格整体为不可编辑
-        self.capacity_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        
-        # 设置表格样式
-        self.capacity_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.capacity_table.verticalHeader().setVisible(False)  # 隐藏行号
-        
-        # 设置表格的其他属性
-        self.capacity_table.setShowGrid(True)  # 显示网格线
-        self.capacity_table.setWordWrap(True)  # 允许文字换行
-        
-        # 设置选择模式为整行选择
-        self.capacity_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.capacity_table.setSelectionMode(QTableWidget.SingleSelection)
-        
-        # 设置表格样式
-        self.capacity_table.setStyleSheet("""
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        table.verticalHeader().setVisible(False)
+        table.setShowGrid(True)
+        table.setWordWrap(True)
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.setSelectionMode(QTableWidget.SingleSelection)
+        table.setStyleSheet("""
             QTableWidget::item:selected {
                 background-color: #0078D7;
                 color: white;
             }
         """)
         
+    def on_condition_changed(self, text):
+        """当副臂装置工况选择改变时"""
+        if text == "是":
+            self.main_content.setVisible(False)
+            self.tab_widget.setVisible(True)
+        else:
+            self.main_content.setVisible(True)
+            self.tab_widget.setVisible(False)
+        
     def update_crane_model(self, model):
         """更新起重机型号"""
-        self.crane_model = model
+        self.Str_crane_modelName = model
 
 if __name__ == '__main__':
     import sys
