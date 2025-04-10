@@ -58,13 +58,17 @@ class CraneSettingsDialog(QDialog):
         # Connect to the database
         db_path = os.path.join(ROOT_DIR, 'CraneDataBase')  # Adjusted for no extension
         print(f"Database path: {db_path}")
-        
+
         try:
+            # 建立数据库连接（注意：此处连接的是无扩展名的数据库文件）
             self.connection = sqlite3.connect(db_path)
+            # 创建数据库游标对象用于执行SQL操作
             self.cursor = self.connection.cursor()
-            
-            # Fetch data from the database
+
+            # 从数据库TruckCrane表中获取起重机基础数据
+            # 数据格式：(TruckCraneID, CraneManufacturers, MaxLiftingWeight)
             self.data = self.fetch_data_from_db()
+
         except sqlite3.Error as e:
             print(f"Database connection error: {e}")
             QMessageBox.critical(self, "Database Error", f"Failed to connect to the database: {e}")
@@ -76,7 +80,7 @@ class CraneSettingsDialog(QDialog):
         self.tab_widget = QTabWidget()
         
         # 创建两个标签页内容
-        self.custom_tab = CraneCustomTab(self.data)  # Pass data to CraneCustomTab
+        self.custom_tab = CraneCustomTab(self.data, self.cursor)
         self.capacity_tab = CraneCapacityTab()
         
         # 添加标签页
@@ -90,23 +94,29 @@ class CraneSettingsDialog(QDialog):
         
         # 连接信号
         self.custom_tab.crane_selected.connect(self.on_crane_selected)
-        
+
     def fetch_data_from_db(self):
-        """Fetch crane data from the database."""
+        """从数据库获取起重机基础数据
+        数据来源：TruckCrane表
+        数据结构：元组(TruckCraneID, 厂家, 最大起重量)
+        数据用途：用于填充起重机自定义标签页的表格"""
+        # SQL查询语句：选择起重机核心参数
         query = """
         SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
         FROM TruckCrane
         """
-        self.cursor.execute(query)
-        data = self.cursor.fetchall()
+        self.cursor.execute(query)  # 执行数据库查询
+        data = self.cursor.fetchall()  # 获取全部查询结果
 
-        # Format data for display
-        data_str = "\n".join([f"Model: {model}, Manufacturer: {manufacturer}, Capacity: {capacity}" for model, manufacturer, capacity in data])
+        # 格式化数据用于消息框展示（开发阶段调试用）
+        # 格式示例：Model: STC120T5-1, Manufacturer: 三一, Capacity: 120
+        data_str = "\n".join([f"Model: {model}, Manufacturer: {manufacturer}, Capacity: {capacity}"
+                              for model, manufacturer, capacity in data])
 
-        # Display data in a message box
+        # 弹窗显示查询结果（正式版本建议移除，此处用于数据验证）
         QMessageBox.information(self, "Fetched Data", data_str)
 
-        return data
+        return data  # 返回原始数据用于表格填充
 
     def on_crane_selected(self, model):
         """当选择了起重机型号时，更新起重能力表标签页名称"""
@@ -118,9 +128,17 @@ class CraneCustomTab(QWidget):
     """起重机自定义标签页"""
     crane_selected = pyqtSignal(str)
 
-    def __init__(self, data):
+    def __init__(self, data, cursor):
         super().__init__()
         self.data = data  # Store data as a member variable
+        self.cursor = cursor  # Store cursor as a member variable
+        """# 示例数据结构
+            data = [
+             ("STC120T5-1", "三一重工", 120.0),
+            ("XCT80L6", "徐工集团", 80.5),
+            ("QY100K5C", "中联重科", 100.0)
+                   ]
+        """
         self.init_ui()
 
     def init_ui(self):
@@ -135,6 +153,9 @@ class CraneCustomTab(QWidget):
         top_layout.addWidget(self.crane_type_combo)
         top_layout.addStretch()
         main_layout.addLayout(top_layout)
+
+        # Connect the combo box signal to the slot
+        self.crane_type_combo.currentIndexChanged.connect(self.on_crane_type_changed)
 
         # 中间区域 - 表格
         self.table = QTableWidget()
@@ -255,6 +276,38 @@ class CraneCustomTab(QWidget):
 
         # 连接信号
         self.table.itemClicked.connect(self.on_item_clicked)  # 改用clicked信号而不是doubleClicked
+
+    def on_crane_type_changed(self, index):
+        """Handle changes in crane type selection."""
+        crane_type = self.crane_type_combo.currentText()
+        try:
+            if crane_type == "汽车起重机":
+                query = """
+                SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
+                FROM TruckCrane
+                """
+            elif crane_type == "履带式起重机":
+                query = """
+                SELECT CrawlerCraneID, CraneManufacturers, MaxLiftingWeight
+                FROM CrawlerCrane
+                """
+            
+            # Fetch new data based on the selected crane type
+            self.cursor.execute(query)
+            self.data = self.cursor.fetchall()
+
+            # Format data for display
+            data_str = "\n".join([f"Model: {model}, Manufacturer: {manufacturer}, Capacity: {capacity}" for model, manufacturer, capacity in self.data])
+
+            # Display data in a message box
+            QMessageBox.information(self, "Fetched Data", data_str)
+
+            # Clear and update the table with new data
+            self.init_table(self.data)
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
 
     def init_table(self, data):
         """Initialize the table with data from the database."""
