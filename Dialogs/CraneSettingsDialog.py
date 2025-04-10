@@ -114,7 +114,7 @@ class CraneSettingsDialog(QDialog):
                               for model, manufacturer, capacity in data])
 
         # 弹窗显示查询结果（正式版本建议移除，此处用于数据验证）
-        QMessageBox.information(self, "Fetched Data", data_str)
+        #QMessageBox.information(self, "Fetched Data", data_str)
 
         return data  # 返回原始数据用于表格填充
 
@@ -275,7 +275,7 @@ class CraneCustomTab(QWidget):
         self.table.setSelectionMode(QTableWidget.SingleSelection)
 
         # 连接信号
-        self.table.itemClicked.connect(self.on_item_clicked)  # 改用clicked信号而不是doubleClicked
+        self.table.itemClicked.connect(self.on_item_clicked)
 
     def on_crane_type_changed(self, index):
         """Handle changes in crane type selection."""
@@ -300,7 +300,7 @@ class CraneCustomTab(QWidget):
             data_str = "\n".join([f"Model: {model}, Manufacturer: {manufacturer}, Capacity: {capacity}" for model, manufacturer, capacity in self.data])
 
             # Display data in a message box
-            QMessageBox.information(self, "Fetched Data", data_str)
+            #QMessageBox.information(self, "Fetched Data", data_str)
 
             # Clear and update the table with new data
             self.init_table(self.data)
@@ -350,8 +350,36 @@ class CraneCustomTab(QWidget):
         model = self.table.item(row, 1).text()  # 获取型号列的文本
         self.crane_selected.emit(model)
         
-        # 选中整行
-        self.table.selectRow(row)
+        # Fetch detailed information from the database
+        query = """
+        SELECT CraneManufacturers, AxesNums, CraneTotalWeight, OutriggerLongDis,
+               OutriggersHorizDis, IsEnterRatedWT, DisMAHToGroud, DisMAHToRotaCen
+        FROM TruckCraneDetailInfo
+        WHERE TruckCraneID = ?
+        """
+        self.cursor.execute(query, (model,))
+        detail = self.cursor.fetchone()
+
+        if detail:
+            manufacturer, axes_nums, total_weight, long_dis, horiz_dis, is_enter_rated, dis_to_ground, dis_to_rotacen = detail
+            
+            # Populate the UI components with the fetched data
+            self.manufacturer_edit.setText(manufacturer)
+            self.axle_count_edit.setText(str(axes_nums))
+            self.first_axle_load_edit.setText(str(total_weight))
+            self.calc_checkbox.setChecked(is_enter_rated == "是")
+            self.model_edit.setText(model)
+            
+            # Assuming you have QLineEdit for these fields
+            self.axle_count_edit.setText(str(axes_nums))
+            self.first_axle_load_edit.setText(str(total_weight))
+            self.calc_checkbox.setChecked(is_enter_rated == "是")
+            self.model_edit.setText(model)
+            
+            # Populate other fields if you have them
+            # Example:
+            # self.some_other_field.setText(str(long_dis))
+            # self.another_field.setText(str(horiz_dis))
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
