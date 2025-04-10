@@ -361,6 +361,15 @@ class CraneCustomTab(QWidget):
         detail = self.cursor.fetchone()
 
         if detail:
+            # Display detail in a message box
+            detail_str = (
+                f"Manufacturer: {detail[0]}, Axes: {detail[1]}, Total Weight: {detail[2]}, "
+                f"Long Dis: {detail[3]}, Horiz Dis: {detail[4]}, Enter Rated: {detail[5]}, "
+                f"Dis to Ground: {detail[6]}, Dis to RotaCen: {detail[7]}"
+            )
+            QMessageBox.information(self, "Crane Detail", detail_str)
+
+            # Unpack detail data
             manufacturer, axes_nums, total_weight, long_dis, horiz_dis, is_enter_rated, dis_to_ground, dis_to_rotacen = detail
             
             # Populate the UI components with the fetched data
@@ -368,18 +377,16 @@ class CraneCustomTab(QWidget):
             self.axle_count_edit.setText(str(axes_nums))
             self.first_axle_load_edit.setText(str(total_weight))
             self.calc_checkbox.setChecked(is_enter_rated == "是")
-            self.model_edit.setText(model)
             
             # Assuming you have QLineEdit for these fields
-            self.axle_count_edit.setText(str(axes_nums))
-            self.first_axle_load_edit.setText(str(total_weight))
-            self.calc_checkbox.setChecked(is_enter_rated == "是")
             self.model_edit.setText(model)
             
             # Populate other fields if you have them
             # Example:
-            # self.some_other_field.setText(str(long_dis))
-            # self.another_field.setText(str(horiz_dis))
+            # self.long_dis_edit.setText(str(long_dis))
+            # self.horiz_dis_edit.setText(str(horiz_dis))
+            # self.dis_to_ground_edit.setText(str(dis_to_ground))
+            # self.dis_to_rotacen_edit.setText(str(dis_to_rotacen))
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
