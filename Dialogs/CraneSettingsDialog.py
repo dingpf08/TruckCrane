@@ -52,11 +52,13 @@ class CraneSettingsDialog(QDialog):
         self.init_ui()
         
     def init_ui(self):
+        # 设置窗口标题
         self.setWindowTitle("起重机械设置")
+        # 设置窗口大小
         self.resize(800, 600)
         
-        # Connect to the database
-        db_path = os.path.join(ROOT_DIR, 'CraneDataBase')  # Adjusted for no extension
+        # 连接到数据库
+        db_path = os.path.join(ROOT_DIR, 'CraneDataBase')  # 调整为无扩展名
         print(f"Database path: {db_path}")
 
         try:
@@ -234,25 +236,33 @@ class CraneCustomTab(QWidget):
 
         axle_layout.addWidget(self.axle_table, 2, 0, 1, 2)
 
-        # 添加其他参数输入
-        params = [
-            ("起重机总重(吨):", "34.1"),
-            ("支腿纵向距离L(m):", "5.4"),
-            ("支腿横向距离B(m):", "6.4"),
-            ("是否录入额定起重量表:", "是"),
-            ("主臂铰链中心至地面距离h(m):", "3.05"),
-            ("主臂铰链中心至回转中心距离a1(m):", "1.6")
-        ]
+        # Initialize parameter input widgets as member variables
+        self.total_weight_edit = QLineEdit("34.1")
+        self.long_dis_edit = QLineEdit("5.4")
+        self.horiz_dis_edit = QLineEdit("6.4")
+        self.enter_rated_combo = QComboBox()
+        self.enter_rated_combo.addItems(["是", "否"])
+        self.dis_to_ground_edit = QLineEdit("3.05")
+        self.dis_to_rotacen_edit = QLineEdit("1.6")
 
-        for i, (label, value) in enumerate(params):
-            axle_layout.addWidget(QLabel(label), i + 3, 0)
-            if label == "是否录入额定起重量表:":
-                combo = QComboBox()
-                combo.addItems(["是", "否"])
-                axle_layout.addWidget(combo, i + 3, 1)
-            else:
-                edit = QLineEdit(value)
-                axle_layout.addWidget(edit, i + 3, 1)
+        # Add widgets to the layout
+        axle_layout.addWidget(QLabel("起重机总重(吨):"), 3, 0)
+        axle_layout.addWidget(self.total_weight_edit, 3, 1)
+
+        axle_layout.addWidget(QLabel("支腿纵向距离L(m):"), 4, 0)
+        axle_layout.addWidget(self.long_dis_edit, 4, 1)
+
+        axle_layout.addWidget(QLabel("支腿横向距离B(m):"), 5, 0)
+        axle_layout.addWidget(self.horiz_dis_edit, 5, 1)
+
+        axle_layout.addWidget(QLabel("是否录入额定起重量表:"), 6, 0)
+        axle_layout.addWidget(self.enter_rated_combo, 6, 1)
+
+        axle_layout.addWidget(QLabel("主臂铰链中心至地面距离h(m):"), 7, 0)
+        axle_layout.addWidget(self.dis_to_ground_edit, 7, 1)
+
+        axle_layout.addWidget(QLabel("主臂铰链中心至回转中心距离a1(m):"), 8, 0)
+        axle_layout.addWidget(self.dis_to_rotacen_edit, 8, 1)
 
         axle_group.setLayout(axle_layout)
         right_layout.addWidget(axle_group, 3, 0, 1, 2)
@@ -347,46 +357,18 @@ class CraneCustomTab(QWidget):
     def on_item_clicked(self, item):
         """当点击表格项时"""
         row = item.row()
-        model = self.table.item(row, 1).text()  # 获取型号列的文本
-        self.crane_selected.emit(model)
-        
-        # Fetch detailed information from the database
-        query = """
-        SELECT CraneManufacturers, AxesNums, CraneTotalWeight, OutriggerLongDis,
-               OutriggersHorizDis, IsEnterRatedWT, DisMAHToGroud, DisMAHToRotaCen
-        FROM TruckCraneDetailInfo
-        WHERE TruckCraneID = ?
-        """
-        self.cursor.execute(query, (model,))
-        detail = self.cursor.fetchone()
+        selected_data = self.data[row]
 
-        if detail:
-            # Display detail in a message box
-            detail_str = (
-                f"Manufacturer: {detail[0]}, Axes: {detail[1]}, Total Weight: {detail[2]}, "
-                f"Long Dis: {detail[3]}, Horiz Dis: {detail[4]}, Enter Rated: {detail[5]}, "
-                f"Dis to Ground: {detail[6]}, Dis to RotaCen: {detail[7]}"
-            )
-            QMessageBox.information(self, "Crane Detail", detail_str)
-
-            # Unpack detail data
-            manufacturer, axes_nums, total_weight, long_dis, horiz_dis, is_enter_rated, dis_to_ground, dis_to_rotacen = detail
-            
-            # Populate the UI components with the fetched data
-            self.manufacturer_edit.setText(manufacturer)
-            self.axle_count_edit.setText(str(axes_nums))
-            self.first_axle_load_edit.setText(str(total_weight))
-            self.calc_checkbox.setChecked(is_enter_rated == "是")
-            
-            # Assuming you have QLineEdit for these fields
-            self.model_edit.setText(model)
-            
-            # Populate other fields if you have them
-            # Example:
-            # self.long_dis_edit.setText(str(long_dis))
-            # self.horiz_dis_edit.setText(str(horiz_dis))
-            # self.dis_to_ground_edit.setText(str(dis_to_ground))
-            # self.dis_to_rotacen_edit.setText(str(dis_to_rotacen))
+        # Map the data to the UI components
+        self.manufacturer_edit.setText(selected_data[1])  # Manufacturer
+        self.model_edit.setText(selected_data[0])         # Model
+        self.axle_count_edit.setText(str(selected_data[2]))  # Axle Count
+        self.first_axle_load_edit.setText(str(selected_data[3]))  # Total Weight
+        self.long_dis_edit.setText(str(selected_data[4]))  # Longitudinal Distance
+        self.horiz_dis_edit.setText(str(selected_data[5]))  # Horizontal Distance
+        self.enter_rated_combo.setCurrentText("是" if selected_data[6] else "否")  # Enter Rated Weight Table
+        self.dis_to_ground_edit.setText(str(selected_data[7]))  # Distance to Ground
+        self.dis_to_rotacen_edit.setText(str(selected_data[8]))  # Distance to Rotation Center
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
