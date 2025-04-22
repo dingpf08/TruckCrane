@@ -223,7 +223,7 @@ class CraneCustomTab(QWidget):
         # 添加轴距表格
         self.axle_table = QTableWidget()
         self.axle_table.setColumnCount(3)
-        self.axle_table.setHorizontalHeaderLabels(["第排车轮", "依次轴距(mm)", "轴荷(吨)"])
+        self.axle_table.setHorizontalHeaderLabels(["第i排车轮", "依次轴距(mm)", "轴荷(吨)"])
         self.axle_table.setRowCount(2)
 
         # 设置示例数据
@@ -355,20 +355,121 @@ class CraneCustomTab(QWidget):
         """)
 
     def on_item_clicked(self, item):
-        """当点击表格项时"""
+        """当点击表格项时，从数据库获取详细信息并填充到控件中"""
         row = item.row()
         selected_data = self.data[row]
-
-        # Map the data to the UI components
-        self.manufacturer_edit.setText(selected_data[1])  # Manufacturer
-        self.model_edit.setText(selected_data[0])         # Model
-        self.axle_count_edit.setText(str(selected_data[2]))  # Axle Count
-        self.first_axle_load_edit.setText(str(selected_data[3]))  # Total Weight
-        self.long_dis_edit.setText(str(selected_data[4]))  # Longitudinal Distance
-        self.horiz_dis_edit.setText(str(selected_data[5]))  # Horizontal Distance
-        self.enter_rated_combo.setCurrentText("是" if selected_data[6] else "否")  # Enter Rated Weight Table
-        self.dis_to_ground_edit.setText(str(selected_data[7]))  # Distance to Ground
-        self.dis_to_rotacen_edit.setText(str(selected_data[8]))  # Distance to Rotation Center
+        # selected_data中只包含三个值：[型号, 厂家, 最大额定起重量]
+        crane_model = selected_data[0]  # 获取起重机型号
+        
+        try:
+            # 根据起重机类型查询不同的表获取详细信息
+            if self.crane_type_combo.currentText() == "汽车起重机":
+                # 查询汽车起重机详细参数
+                query = """
+                SELECT 
+                    AxesNums,               -- 轴数
+                    CraneTotalWeight,       -- 起重机总重
+                    OutriggerLongDis,       -- 支腿纵向距离L
+                    OutriggersHorizDis,     -- 支腿横向距离B
+                    IsEnterRatedWT,         -- 是否录入额定起重量表
+                    DisMAHToGroud,          -- 主臂铰链中心至地面距离h
+                    DisMAHToRotaCen         -- 主臂铰链中心至回转中心的距离
+                FROM TruckCraneDetailInfo
+                WHERE TruckCraneID = ?
+                """
+            else:
+                # 查询履带式起重机详细参数
+                query = """
+                SELECT 
+                    AxesNums,
+                    CraneTotalWeight,
+                    OutriggerLongDis,
+                    OutriggersHorizDis,
+                    IsEnterRatedWT,
+                    DisMAHToGroud,
+                    DisMAHToRotaCen
+                FROM CrawlerCraneDetailInfo
+                WHERE CrawlerCraneID = ?
+                """
+            
+            # 执行查询
+            self.cursor.execute(query, (crane_model,))
+            detail = self.cursor.fetchone()
+            
+            if detail:
+                # 先填充已知的数据
+                self.manufacturer_edit.setText(str(selected_data[1]))  # 厂家
+                self.model_edit.setText(str(selected_data[0]))        # 型号
+                
+                # 填充查询到的详细数据
+                self.total_weight_edit.setText(str(detail[1]))       # 总重
+                self.long_dis_edit.setText(str(detail[2]))           # 支腿纵向距离L
+                self.horiz_dis_edit.setText(str(detail[3]))          # 支腿横向距离B
+                self.enter_rated_combo.setCurrentText("是" if detail[4] == "是" else "否")  # 是否有额定起重量表
+                self.dis_to_ground_edit.setText(str(detail[5]))      # 主臂铰链中心至地面距离h
+                self.dis_to_rotacen_edit.setText(str(detail[6]))     # 主臂铰链中心至回转中心距离a1
+                
+                # 发送型号选择信号
+                self.crane_selected.emit(crane_model)
+                
+                # 查询并填充轴距和轴荷数据
+                self.load_axle_data(crane_model)
+                
+            else:
+                QMessageBox.warning(self, "查询结果", f"未找到型号为 {crane_model} 的起重机详细信息")
+                
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "数据库错误", f"查询数据时发生错误: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"发生未知错误: {str(e)}")
+            
+    def load_axle_data(self, crane_model):
+        """加载轴距和轴荷数据"""
+        try:
+            # 查询轴数和轴距轴荷数据
+            query = """
+            SELECT 
+                AxesNums,    -- 轴数
+                D1, L1,      -- 第1排轴距和轴荷
+                D2, L2,      -- 第2排轴距和轴荷
+                D3, L3,      -- 第3排轴距和轴荷
+                D4, L4,      -- 第4排轴距和轴荷
+                D5, L5,      -- 第5排轴距和轴荷
+                D6, L6       -- 第6排轴距和轴荷
+            FROM TruckCraneAxesNumLoad
+            WHERE TruckCraneID = ?
+            """
+            
+            self.cursor.execute(query, (crane_model,))
+            axle_data = self.cursor.fetchone()
+            
+            if axle_data:
+                axle_count = int(axle_data[0])  # 获取轴数
+                self.axle_count_edit.setText(str(axle_count))  # 设置轴数
+                
+                # 设置第一排轴荷
+                self.first_axle_load_edit.setText(str(axle_data[2]))  # L1值
+                
+                # 设置轴距表格的行数（轴数-1，因为第一排已经单独显示）
+                self.axle_table.setRowCount(axle_count - 1)
+                
+                # 从第2排开始填充轴距和轴荷数据
+                for i in range(axle_count - 1):
+                    # 计算在axle_data中的索引位置
+                    # 每对D,L占用2个位置，从D2,L2开始，所以基础偏移是3
+                    base_idx = 3 + i * 2
+                    
+                    # 设置排数（从2开始）
+                    self.axle_table.setItem(i, 0, QTableWidgetItem(str(i + 2)))
+                    # 设置轴距
+                    self.axle_table.setItem(i, 1, QTableWidgetItem(str(axle_data[base_idx])))
+                    # 设置轴荷
+                    self.axle_table.setItem(i, 2, QTableWidgetItem(str(axle_data[base_idx + 1])))
+                    
+        except sqlite3.Error as e:
+            QMessageBox.warning(self, "数据库错误", f"加载轴距和轴荷数据时发生错误: {str(e)}")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"加载轴距和轴荷数据时发生未知错误: {str(e)}")
 
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
