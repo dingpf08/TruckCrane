@@ -10,7 +10,7 @@ import sqlite3
 # 起重机械设置对话框的数据流和逻辑
 #
 # 1. 初始化：
-#    - 初始化 CraneSettingsDialog，设置 UI 并连接到数据库。
+#    - 初始化 CraneSettingsDialog，设置 UI 并连接数据库。
 #
 # 2. 数据库连接：
 #    - 使用从 ROOT_DIR 构建的路径连接到 SQLite 数据库。
@@ -698,11 +698,12 @@ class CraneCapacityTab(QWidget):
         
     def init_capacity_table(self, table, is_combined=False):
         """初始化起重能力表"""
+        self.table = table
         if not is_combined:
             # 主臂起重能力表
             headers = ["幅度/主臂长(m)", "9.6", "15.08", "20.56", "26.04", "31.52", "37"]
-            table.setColumnCount(len(headers))
-            table.setHorizontalHeaderLabels(headers)
+            self.table.setColumnCount(len(headers))
+            self.table.setHorizontalHeaderLabels(headers)
             
             data = [
                 ["3", "12", "10.8", "", "", "", ""],
@@ -727,8 +728,8 @@ class CraneCapacityTab(QWidget):
         else:
             # 主臂+副臂起重能力表
             headers = ["幅度/主臂长(m)", "41"]
-            table.setColumnCount(len(headers))
-            table.setHorizontalHeaderLabels(headers)
+            self.table.setColumnCount(len(headers))
+            self.table.setHorizontalHeaderLabels(headers)
             
             data = [
                 ["78", "2.8"],
@@ -741,22 +742,22 @@ class CraneCapacityTab(QWidget):
                 ["50", "0.35"]
             ]
         
-        table.setRowCount(len(data))
+        self.table.setRowCount(len(data))
         
         for i, row in enumerate(data):
             for j, value in enumerate(row):
                 item = QTableWidgetItem(value if value else "")
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                table.setItem(i, j, item)
+                self.table.setItem(i, j, item)
         
-        table.setEditTriggers(QTableWidget.NoEditTriggers)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.verticalHeader().setVisible(False)
-        table.setShowGrid(True)
-        table.setWordWrap(True)
-        table.setSelectionBehavior(QTableWidget.SelectRows)
-        table.setSelectionMode(QTableWidget.SingleSelection)
-        table.setStyleSheet("""
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(True)
+        self.table.setWordWrap(True)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        self.table.setStyleSheet("""
             QTableWidget::item:selected {
                 background-color: #0078D7;
                 color: white;
