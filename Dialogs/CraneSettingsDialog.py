@@ -534,6 +534,9 @@ class CraneCapacityTab(QWidget):
         # 连接信号
         self.condition_combo.currentTextChanged.connect(self.on_condition_changed)
         
+        # 连接工况表的点击信号
+        self.condition_table.itemClicked.connect(self.on_condition_clicked)
+        
     def init_main_content(self):
         """初始化主要内容区域（非标签页模式）"""
         layout = QVBoxLayout()
@@ -821,6 +824,115 @@ class CraneCapacityTab(QWidget):
             QMessageBox.warning(self, "数据库错误", f"加载工况数据时发生错误: {str(e)}")
         except Exception as e:
             QMessageBox.warning(self, "错误", f"加载工况数据时发生未知错误: {str(e)}")
+
+    def format_number(self, value):
+        """格式化数字
+        - 如果是整数，返回整数格式 (例如: 3.0 -> 3)
+        - 如果是一位小数，保留一位小数 (例如: 3.5 -> 3.5)
+        - 如果是两位小数，保留两位小数 (例如: 3.52 -> 3.52)
+        - 如果不是数字，返回原始值
+        """
+        try:
+            # 尝试转换为浮点数
+            num = float(value)
+            # 检查是否为整数
+            if num.is_integer():
+                return str(int(num))
+            
+            # 检查小数位数
+            str_num = str(num)
+            decimal_part = str_num.split('.')[1]
+            
+            # 如果小数部分第二位是0或不存在，只保留一位小数
+            if len(decimal_part) == 1 or decimal_part[1] == '0':
+                return f"{num:.1f}"
+            # 否则保留两位小数
+            return f"{num:.2f}"
+            
+        except (ValueError, TypeError):
+            return str(value)
+
+    def on_condition_clicked(self, item):
+        """当点击工况表中的工况时触发"""
+        try:
+            # 获取选中的工况名称
+            row = item.row()
+            condition = self.condition_table.item(row, 1).text()  # 第二列是工况描述
+            
+            # 查询该工况下的所有数据
+            query = """
+            SELECT 
+                TruckCraneRange,           -- 汽车吊幅
+                TruckCraneMainArmLen,      -- 主臂长
+                TruckCraneRatedLiftingCap  -- 额定起重量
+            FROM TruckCraneLiftingCapacityData
+            WHERE TruckCraneID = ? 
+            AND SpeWorkCondition = ?
+            AND TruckCraneRatedLiftingCap IS NOT NULL 
+            AND TruckCraneRatedLiftingCap != ''
+            AND CAST(TruckCraneRatedLiftingCap AS FLOAT) > 0
+            ORDER BY CAST(TruckCraneMainArmLen AS FLOAT) ASC, CAST(TruckCraneRange AS FLOAT) ASC
+            """
+            
+            self.cursor.execute(query, (self.Str_crane_modelName, condition))
+            data = self.cursor.fetchall()
+            
+            if data:
+                # 创建一个字典来存储额定起重量数据
+                capacity_dict = {}
+                valid_ranges = set()
+                valid_arm_lengths = set()
+                
+                # 首先收集所有有效的数据
+                for row in data:
+                    range_val = self.format_number(row[0])
+                    arm_len = self.format_number(row[1])
+                    lifting_cap = row[2]
+                    
+                    # 只处理有效的额定起重量数据
+                    if lifting_cap and str(lifting_cap).strip():
+                        try:
+                            if float(lifting_cap) > 0:
+                                capacity_dict[(range_val, arm_len)] = self.format_number(lifting_cap)
+                                valid_ranges.add(range_val)
+                                valid_arm_lengths.add(arm_len)
+                        except ValueError:
+                            continue
+                
+                # 转换为排序后的列表
+                ranges = sorted(list(valid_ranges), key=lambda x: float(x) if x else 0)
+                main_arm_lengths = sorted(list(valid_arm_lengths), key=lambda x: float(x) if x else 0)
+                
+                # 设置表格的行数和列数
+                self.table.setRowCount(len(ranges))
+                self.table.setColumnCount(len(main_arm_lengths) + 1)
+                
+                # 设置表格标题
+                headers = ["幅度/主臂长(m)"] + main_arm_lengths
+                self.table.setHorizontalHeaderLabels(headers)
+                
+                # 填充第一列（吊幅值）
+                for i, range_val in enumerate(ranges):
+                    self.table.setItem(i, 0, QTableWidgetItem(range_val))
+                
+                # 填充额定起重量数据
+                for i, range_val in enumerate(ranges):
+                    for j, arm_len in enumerate(main_arm_lengths):
+                        # 获取对应的额定起重量，如果不存在则设置为空字符串
+                        capacity = capacity_dict.get((range_val, arm_len), "")
+                        self.table.setItem(i, j + 1, QTableWidgetItem(capacity))
+                
+                # 调整表格显示
+                self.table.resizeColumnsToContents()
+                self.table.resizeRowsToContents()
+                
+            else:
+                QMessageBox.warning(self, "查询结果", f"未找到工况 '{condition}' 的数据")
+                
+        except sqlite3.Error as e:
+            QMessageBox.warning(self, "数据库错误", f"查询数据时发生错误: {str(e)}")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"发生未知错误: {str(e)}")
 
 if __name__ == '__main__':
     import sys
