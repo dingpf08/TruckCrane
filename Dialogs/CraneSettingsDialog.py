@@ -228,7 +228,7 @@ class CraneCustomTab(QWidget):
         self.axle_table = QTableWidget()
         self.axle_table.setColumnCount(3)
         self.axle_table.setHorizontalHeaderLabels(["第i排车轮", "依次轴距(mm)", "轴荷(吨)"])
-        self.axle_table.setRowCount(2)
+        self.axle_table.setRowCount(3)  # 修改为3行
 
         # 设置示例数据
         self.axle_table.setItem(0, 0, QTableWidgetItem("2"))
@@ -237,7 +237,30 @@ class CraneCustomTab(QWidget):
         self.axle_table.setItem(1, 0, QTableWidgetItem("3"))
         self.axle_table.setItem(1, 1, QTableWidgetItem("1360"))
         self.axle_table.setItem(1, 2, QTableWidgetItem("13.000"))
+        self.axle_table.setItem(2, 0, QTableWidgetItem("4"))
+        self.axle_table.setItem(2, 1, QTableWidgetItem("1360"))
+        self.axle_table.setItem(2, 2, QTableWidgetItem("13.000"))
 
+        # 设置表格的样式
+        self.axle_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 自动调整列宽
+        self.axle_table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #d0d0d0;
+                background-color: white;
+                alternate-background-color: #f6f6f6;
+            }
+            QTableWidget::item:selected {
+                background-color: #0078D7;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #f0f0f0;
+                padding: 4px;
+                border: 1px solid #d0d0d0;
+                font-weight: bold;
+            }
+        """)
+        
         axle_layout.addWidget(self.axle_table, 2, 0, 1, 2)
 
         # Initialize parameter input widgets as member variables
