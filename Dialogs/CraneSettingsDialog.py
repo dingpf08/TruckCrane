@@ -1054,29 +1054,29 @@ class CraneCapacityTab(QWidget):
                 AND SecondSpeWorkCondition IS NULL
                 AND TruckCraneRatedLiftingCap IS NOT NULL
                 AND TruckCraneRatedLiftingCap != ''
-                ORDER BY CAST(TruckCraneMainArmLen AS FLOAT), CAST(TruckCraneRange AS FLOAT)
+                ORDER BY CAST(TruckCraneRange AS FLOAT), CAST(TruckCraneMainArmLen AS FLOAT)
                 """
                 
                 self.cursor.execute(query, (self.Str_crane_modelName, condition))
                 data = self.cursor.fetchall()
                 
                 if data:
-                    # 获取所有不同的主臂长度和幅度值
-                    arm_lengths = sorted(set(row[1] for row in data), key=lambda x: float(x) if x else 0)
-                    ranges = sorted(set(row[0] for row in data), key=lambda x: float(x) if x else 0)
+                    # 获取所有不同的主臂长度和幅度值，确保转换为字符串
+                    arm_lengths = sorted(set(str(row[1]) for row in data), key=lambda x: float(x) if x else 0)
+                    ranges = sorted(set(str(row[0]) for row in data), key=lambda x: float(x) if x else 0)
                     
                     # 设置主臂工况表格的列数和标题
                     self.main_capacity_table.setColumnCount(len(arm_lengths) + 1)
-                    headers = ["幅度/主臂长(m)"] + arm_lengths
+                    headers = ["幅度/主臂长(m)"] + [str(x) for x in arm_lengths]
                     self.main_capacity_table.setHorizontalHeaderLabels(headers)
                     
                     # 设置行数
                     self.main_capacity_table.setRowCount(len(ranges))
                     
-                    # 创建数据字典，用于快速查找
+                    # 创建数据字典，用于快速查找，确保所有值都是字符串
                     capacity_dict = {}
                     for row in data:
-                        capacity_dict[(row[0], row[1])] = row[2]
+                        capacity_dict[(str(row[0]), str(row[1]))] = str(row[2])
                     
                     # 填充数据
                     for i, range_val in enumerate(ranges):
@@ -1086,10 +1086,20 @@ class CraneCapacityTab(QWidget):
                         # 填充每个主臂长度对应的起重量
                         for j, arm_len in enumerate(arm_lengths):
                             capacity = capacity_dict.get((range_val, arm_len), "")
-                            self.main_capacity_table.setItem(i, j + 1, QTableWidgetItem(str(capacity)))
+                            if capacity:
+                                # 使用format_number格式化数值
+                                formatted_capacity = self.format_number(capacity)
+                                self.main_capacity_table.setItem(i, j + 1, QTableWidgetItem(formatted_capacity))
+                            else:
+                                self.main_capacity_table.setItem(i, j + 1, QTableWidgetItem(""))
                     
                     # 调整列宽
                     self.main_capacity_table.resizeColumnsToContents()
+                else:
+                    # 如果没有数据，清空表格
+                    self.main_capacity_table.setRowCount(0)
+                    self.main_capacity_table.setColumnCount(1)
+                    self.main_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
                     
             elif current_tab == self.combined_boom_tab:
                 # 获取选中的主臂+副臂工况
@@ -1109,29 +1119,29 @@ class CraneCapacityTab(QWidget):
                 AND SecondSpeWorkCondition = ?
                 AND TruckCraneRatedLiftingCap IS NOT NULL
                 AND TruckCraneRatedLiftingCap != ''
-                ORDER BY CAST(TruckCraneMainArmLen AS FLOAT), CAST(TruckCraneRange AS FLOAT)
+                ORDER BY CAST(TruckCraneRange AS FLOAT), CAST(TruckCraneMainArmLen AS FLOAT)
                 """
                 
                 self.cursor.execute(query, (self.Str_crane_modelName, condition))
                 data = self.cursor.fetchall()
                 
                 if data:
-                    # 获取所有不同的主臂长度和幅度值
-                    arm_lengths = sorted(set(row[1] for row in data), key=lambda x: float(x) if x else 0)
-                    ranges = sorted(set(row[0] for row in data), key=lambda x: float(x) if x else 0)
+                    # 获取所有不同的主臂长度和幅度值，确保转换为字符串
+                    arm_lengths = sorted(set(str(row[1]) for row in data), key=lambda x: float(x) if x else 0)
+                    ranges = sorted(set(str(row[0]) for row in data), key=lambda x: float(x) if x else 0)
                     
                     # 设置主臂+副臂工况表格的列数和标题
                     self.combined_capacity_table.setColumnCount(len(arm_lengths) + 1)
-                    headers = ["幅度/主臂长(m)"] + arm_lengths
+                    headers = ["幅度/主臂长(m)"] + [str(x) for x in arm_lengths]
                     self.combined_capacity_table.setHorizontalHeaderLabels(headers)
                     
                     # 设置行数
                     self.combined_capacity_table.setRowCount(len(ranges))
                     
-                    # 创建数据字典，用于快速查找
+                    # 创建数据字典，用于快速查找，确保所有值都是字符串
                     capacity_dict = {}
                     for row in data:
-                        capacity_dict[(row[0], row[1])] = row[2]
+                        capacity_dict[(str(row[0]), str(row[1]))] = str(row[2])
                     
                     # 填充数据
                     for i, range_val in enumerate(ranges):
@@ -1141,10 +1151,20 @@ class CraneCapacityTab(QWidget):
                         # 填充每个主臂长度对应的起重量
                         for j, arm_len in enumerate(arm_lengths):
                             capacity = capacity_dict.get((range_val, arm_len), "")
-                            self.combined_capacity_table.setItem(i, j + 1, QTableWidgetItem(str(capacity)))
+                            if capacity:
+                                # 使用format_number格式化数值
+                                formatted_capacity = self.format_number(capacity)
+                                self.combined_capacity_table.setItem(i, j + 1, QTableWidgetItem(formatted_capacity))
+                            else:
+                                self.combined_capacity_table.setItem(i, j + 1, QTableWidgetItem(""))
                     
                     # 调整列宽
                     self.combined_capacity_table.resizeColumnsToContents()
+                else:
+                    # 如果没有数据，清空表格
+                    self.combined_capacity_table.setRowCount(0)
+                    self.combined_capacity_table.setColumnCount(1)
+                    self.combined_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
                     
         except sqlite3.Error as e:
             QMessageBox.warning(self, "数据库错误", f"查询起重能力数据时发生错误: {str(e)}")
