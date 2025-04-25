@@ -94,6 +94,8 @@ class CraneSettingsDialog(QDialog):
             
             # 连接信号
             self.custom_tab.crane_selected.connect(self.on_crane_selected)
+            # 添加标签页切换信号连接
+            self.tab_widget.currentChanged.connect(self.on_tab_changed)
 
         except sqlite3.Error as e:
             print(f"Database connection error: {e}")
@@ -129,6 +131,47 @@ class CraneSettingsDialog(QDialog):
         self.tab_widget.setTabText(1, f"{model}起重机额定起重能力表")
         # 加载并显示工况数据
         self.capacity_tab.load_working_conditions(model, self.cursor)
+
+    def on_tab_changed(self, index):
+        """处理标签页切换事件"""
+        if index == 1:  # 当切换到起重机额定起重能力表标签页时
+            try:
+                # 查询是否有副臂吊装工况
+                query = """
+                SELECT DISTINCT IsJibHosCon 
+                FROM TruckCraneLiftingCapacityData 
+                WHERE TruckCraneID = ?
+                """
+                
+                self.cursor.execute(query, (self.capacity_tab.Str_crane_modelName,))
+                result = self.cursor.fetchone()
+                
+                if result:
+                    has_auxiliary = result[0] == "是"
+                    
+                    # 更新工况选择下拉框
+                    self.capacity_tab.condition_combo.setCurrentText("是" if has_auxiliary else "否")
+                    
+                    # 更新标签页显示
+                    self.capacity_tab.main_content.setVisible(not has_auxiliary)
+                    self.capacity_tab.tab_widget.setVisible(has_auxiliary)
+                    
+                    # 如果有副臂吊装工况，显示所有标签页
+                    if has_auxiliary:
+                        self.capacity_tab.tab_widget.clear()
+                        self.capacity_tab.tab_widget.addTab(self.capacity_tab.main_boom_tab, "主臂起重性能表")
+                        self.capacity_tab.tab_widget.addTab(self.capacity_tab.combined_boom_tab, "主臂+副臂起重性能表")
+                    else:
+                        # 如果没有副臂吊装工况，只显示主臂标签页
+                        self.capacity_tab.tab_widget.clear()
+                        self.capacity_tab.tab_widget.addTab(self.capacity_tab.main_boom_tab, "主臂起重性能表")
+                else:
+                    QMessageBox.warning(self, "查询结果", f"未找到型号为 {self.capacity_tab.Str_crane_modelName} 的副臂吊装工况信息")
+                    
+            except sqlite3.Error as e:
+                QMessageBox.warning(self, "数据库错误", f"查询副臂吊装工况时发生错误: {str(e)}")
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"发生未知错误: {str(e)}")
 
 class CraneCustomTab(QWidget):
     """起重机自定义标签页"""
@@ -228,7 +271,7 @@ class CraneCustomTab(QWidget):
         self.axle_table = QTableWidget()
         self.axle_table.setColumnCount(3)
         self.axle_table.setHorizontalHeaderLabels(["第i排车轮", "依次轴距(mm)", "轴荷(吨)"])
-        self.axle_table.setRowCount(3)  # 修改为3行
+        self.axle_table.setRowCount(2)
 
         # 设置示例数据
         self.axle_table.setItem(0, 0, QTableWidgetItem("2"))
@@ -237,30 +280,7 @@ class CraneCustomTab(QWidget):
         self.axle_table.setItem(1, 0, QTableWidgetItem("3"))
         self.axle_table.setItem(1, 1, QTableWidgetItem("1360"))
         self.axle_table.setItem(1, 2, QTableWidgetItem("13.000"))
-        self.axle_table.setItem(2, 0, QTableWidgetItem("4"))
-        self.axle_table.setItem(2, 1, QTableWidgetItem("1360"))
-        self.axle_table.setItem(2, 2, QTableWidgetItem("13.000"))
 
-        # 设置表格的样式
-        self.axle_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 自动调整列宽
-        self.axle_table.setStyleSheet("""
-            QTableWidget {
-                gridline-color: #d0d0d0;
-                background-color: white;
-                alternate-background-color: #f6f6f6;
-            }
-            QTableWidget::item:selected {
-                background-color: #0078D7;
-                color: white;
-            }
-            QHeaderView::section {
-                background-color: #f0f0f0;
-                padding: 4px;
-                border: 1px solid #d0d0d0;
-                font-weight: bold;
-            }
-        """)
-        
         axle_layout.addWidget(self.axle_table, 2, 0, 1, 2)
 
         # Initialize parameter input widgets as member variables
@@ -800,8 +820,46 @@ class CraneCapacityTab(QWidget):
             self.tab_widget.setVisible(False)
         
     def update_crane_model(self, model):
-        """更新起重机型号"""
+        """更新起重机型号并检查副臂吊装工况"""
         self.Str_crane_modelName = model
+        
+        try:
+            # 查询是否有副臂吊装工况
+            query = """
+            SELECT DISTINCT IsJibHosCon 
+            FROM TruckCraneLiftingCapacityData 
+            WHERE TruckCraneID = ?
+            """
+            
+            self.cursor.execute(query, (model,))
+            result = self.cursor.fetchone()
+            
+            if result:
+                has_auxiliary = result[0] == "是"
+                
+                # 更新工况选择下拉框
+                self.condition_combo.setCurrentText("是" if has_auxiliary else "否")
+                
+                # 更新标签页显示
+                self.main_content.setVisible(not has_auxiliary)
+                self.tab_widget.setVisible(has_auxiliary)
+                
+                # 如果有副臂吊装工况，显示所有标签页
+                if has_auxiliary:
+                    self.tab_widget.clear()
+                    self.tab_widget.addTab(self.main_boom_tab, "主臂起重性能表")
+                    self.tab_widget.addTab(self.combined_boom_tab, "主臂+副臂起重性能表")
+                else:
+                    # 如果没有副臂吊装工况，只显示主臂标签页
+                    self.tab_widget.clear()
+                    self.tab_widget.addTab(self.main_boom_tab, "主臂起重性能表")
+            else:
+                QMessageBox.warning(self, "查询结果", f"未找到型号为 {model} 的副臂吊装工况信息")
+                
+        except sqlite3.Error as e:
+            QMessageBox.warning(self, "数据库错误", f"查询副臂吊装工况时发生错误: {str(e)}")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"发生未知错误: {str(e)}")
 
     def set_database_cursor(self, cursor):
         """设置数据库游标"""
