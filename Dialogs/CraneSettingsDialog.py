@@ -989,6 +989,10 @@ class CraneCapacityTab(QWidget):
             SELECT DISTINCT IsJibHosCon
             FROM TruckCraneLiftingCapacityData
             WHERE TruckCraneID = ?
+            AND IsJibHosCon IS NOT NULL
+            AND TRIM(IsJibHosCon) != ''
+            GROUP BY IsJibHosCon
+            ORDER BY IsJibHosCon
             """
 
             self.cursor.execute(query, (model,))
@@ -1001,32 +1005,35 @@ class CraneCapacityTab(QWidget):
             else:
                 # If no IsJibHosCon found, assume no auxiliary boom
                 self.condition_combo.setCurrentText("否")
-                # Optionally show a warning, but maybe not necessary if load_working_conditions handles empty results gracefully
-                # QMessageBox.warning(self, "查询结果", f"未找到型号为 {model} 的副臂吊装工况信息 (IsJibHosCon)")
 
             # Load conditions into instance variables regardless of has_auxiliary
             self.load_working_conditions()
 
             # Update UI visibility based on has_auxiliary
-            self.main_content.setVisible(not has_auxiliary)
-            self.tab_widget.setVisible(has_auxiliary)
-
-            # Trigger population of the initially visible condition table
             if has_auxiliary:
-                 # Ensure the tab widget's current index is correct before calling on_tab_changed
-                 # It might default to 0, so explicitly set it if needed, or rely on default
-                 self.on_tab_changed(self.tab_widget.currentIndex())
+                # 显示两个标签页
+                self.main_content.setVisible(False)
+                self.tab_widget.setVisible(True)
+                # 确保标签页都可见
+                self.tab_widget.setTabEnabled(0, True)  # 启用主臂标签页
+                self.tab_widget.setTabEnabled(1, True)  # 启用主臂+副臂标签页
+                # 默认显示主臂标签页
+                self.tab_widget.setCurrentIndex(0)
+                # 触发标签页切换事件以更新数据
+                self.on_tab_changed(0)
             else:
-                 # Populate the main condition table directly as it's the only one visible
-                 self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
-                 # Clear capacity table and reset title for main_content view
-                 if self.main_capacity_table:
+                # 只显示主臂标签页
+                self.main_content.setVisible(True)
+                self.tab_widget.setVisible(False)
+                # 直接更新主臂工况表格
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                # 清空并重置主臂起重能力表格
+                if self.main_capacity_table:
                     self.main_capacity_table.setRowCount(0)
                     self.main_capacity_table.setColumnCount(1)
                     self.main_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
-                 if self.main_capacity_title:
+                if self.main_capacity_title:
                     self.main_capacity_title.setText("额定起重量(吨)")
-
 
         except sqlite3.Error as e:
             QMessageBox.warning(self, "数据库错误", f"查询副臂吊装工况时发生错误: {str(e)}")
@@ -1048,7 +1055,12 @@ class CraneCapacityTab(QWidget):
             self.tab_widget.setVisible(False)
 
     def load_working_conditions(self):
-        """加载起重机工况数据到类变量中"""
+        """加载起重机工况数据到类变量中
+        
+        逻辑说明：
+        1. 主臂工况(SpeWorkCondition)必须查询，不受IsJibHosCon影响
+        2. 只有当IsJibHosCon为"是"时才查询副臂工况(SecondSpeWorkCondition)
+        """
         self.main_boom_conditions = []
         self.combined_boom_conditions = []
 
@@ -1056,58 +1068,47 @@ class CraneCapacityTab(QWidget):
             return
 
         try:
-            # 首先查询是否有副臂吊装工况
+            # 1. 首先查询是否有副臂吊装工况
             query_check = """
-            SELECT DISTINCT IsJibHosCon
+            SELECT DISTINCT SpeWorkCondition
             FROM TruckCraneLiftingCapacityData
             WHERE TruckCraneID = ?
+            AND SpeWorkCondition IS NOT NULL
+            AND TRIM(SpeWorkCondition) != ''
+            GROUP BY SpeWorkCondition
+            ORDER BY SpeWorkCondition
             """
             self.cursor.execute(query_check, (self.Str_crane_modelName,))
-            has_jib = self.cursor.fetchone()[0] == "是"
+            result = self.cursor.fetchone()
+            has_jib = result[0] == "是" if result else False
 
-            # 加载主臂工况数据
-            if has_jib:
-                # 如果有副臂，查询所有不重复的主臂工况
-                query_main = """
-                SELECT DISTINCT SpeWorkCondition
-                FROM TruckCraneLiftingCapacityData
-                WHERE TruckCraneID = ?
-                AND SpeWorkCondition IS NOT NULL
-                AND SpeWorkCondition != ''
-                AND IsJibHosCon = '是'
-                GROUP BY SpeWorkCondition
-                ORDER BY SpeWorkCondition
-                """
-            else:
-                # 如果没有副臂，使用原来的查询
-                query_main = """
-                SELECT DISTINCT SpeWorkCondition
-                FROM TruckCraneLiftingCapacityData
-                WHERE TruckCraneID = ?
-                AND SpeWorkCondition IS NOT NULL
-                AND SpeWorkCondition != ''
-                AND (SecondSpeWorkCondition IS NULL OR SecondSpeWorkCondition = '')
-                ORDER BY SpeWorkCondition
-                """
-
+            # 2. 查询主臂工况数据（不受IsJibHosCon影响）
+            query_main = """
+            SELECT DISTINCT SpeWorkCondition
+            FROM TruckCraneLiftingCapacityData
+            WHERE TruckCraneID = ?
+            AND SpeWorkCondition IS NOT NULL
+            AND TRIM(SpeWorkCondition) != ''
+            GROUP BY SpeWorkCondition
+            ORDER BY SpeWorkCondition
+            """
             self.cursor.execute(query_main, (self.Str_crane_modelName,))
             conditions_main = self.cursor.fetchall()
             if conditions_main:
                 self.main_boom_conditions = sorted(list(set([cond[0] for cond in conditions_main if cond[0]])))
 
-            # 加载副臂工况数据（只在有副臂时加载）
+            # 3. 如果有副臂，才查询副臂工况数据
             if has_jib:
                 query_combined = """
                 SELECT DISTINCT SecondSpeWorkCondition
                 FROM TruckCraneLiftingCapacityData
                 WHERE TruckCraneID = ?
+                AND IsJibHosCon = '是'
                 AND SecondSpeWorkCondition IS NOT NULL
                 AND TRIM(SecondSpeWorkCondition) != ''
-                AND IsJibHosCon = '是'
                 GROUP BY SecondSpeWorkCondition
                 ORDER BY SecondSpeWorkCondition
                 """
-
                 self.cursor.execute(query_combined, (self.Str_crane_modelName,))
                 conditions_combined = self.cursor.fetchall()
                 if conditions_combined:
