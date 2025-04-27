@@ -61,42 +61,20 @@ print(f"ROOT_DIR: {ROOT_DIR}")
 class CraneSettingsDialog(QDialog):
     """起重机械设置主对话框类
     
-    此类是整个起重机械设置模块的主要界面类，负责管理和展示起重机的各项设置。
-    包括基本信息配置、性能参数管理和起重能力表的展示与编辑。
-    
-    主要功能：
-    1. 管理数据库连接和数据存取
-    2. 提供起重机基本信息的配置界面
-    3. 展示和管理起重能力表
-    4. 处理用户交互和数据更新
-    
-    属性：
-        data (list): 存储从数据库获取的起重机基础数据
-        current_crane_model (str): 当前选中的起重机型号
-        cursor (sqlite3.Cursor): 数据库游标对象
-        connection (sqlite3.Connection): 数据库连接对象
-        tab_widget (QTabWidget): 标签页控件，用于管理不同的设置页面
-        custom_tab (CraneCustomTab): 起重机自定义标签页实例
-        capacity_tab (CraneCapacityTab): 起重机额定起重能力表标签页实例
+    负责管理整个对话框的布局和数据流转，包括：
+    1. 数据库连接和基础数据获取
+    2. 标签页管理
+    3. 用户交互响应
     """
     
     def __init__(self, parent=None):
-        """初始化起重机械设置对话框
-        
-        Args:
-            parent (QWidget, optional): 父窗口对象. Defaults to None.
-        """
         super().__init__(parent)
-        self.data = []  # 存储从数据库获取的起重机基础数据
-        self.current_crane_model = None  # 当前选中的起重机型号
+        self.data = []
+        self.current_crane_model = None  # 添加当前选中的起重机型号属性
         self.init_ui()
         
     def init_ui(self):
-        """初始化用户界面
-        
-        设置对话框的基本属性，包括标题、大小等，并初始化各个子组件。
-        同时建立数据库连接并创建基本布局。
-        """
+        """初始化用户界面"""
         self.setWindowTitle("起重机械设置")
         self.resize(800, 600)
         self.setup_database()
@@ -104,11 +82,7 @@ class CraneSettingsDialog(QDialog):
         self.setup_connections()
         
     def setup_database(self):
-        """设置数据库连接
-        
-        建立与SQLite数据库的连接，初始化游标对象，
-        并从数据库获取初始数据。如果连接失败，将显示错误消息。
-        """
+        """设置数据库连接"""
         try:
             db_path = os.path.join(ROOT_DIR, 'CraneDataBase')
             self.connection = sqlite3.connect(db_path)
@@ -118,11 +92,7 @@ class CraneSettingsDialog(QDialog):
             QMessageBox.critical(self, "数据库错误", f"连接数据库失败: {e}")
             
     def create_layout(self):
-        """创建主布局
-        
-        设置对话框的整体布局，包括创建和添加标签页控件，
-        初始化自定义标签页和起重能力表标签页。
-        """
+        """创建主布局"""
         layout = QVBoxLayout()
         self.tab_widget = QTabWidget()
 
@@ -138,20 +108,12 @@ class CraneSettingsDialog(QDialog):
         self.setLayout(layout)
         
     def setup_connections(self):
-        """设置信号连接
-        
-        建立各个控件之间的信号连接，处理用户交互事件。
-        包括起重机选择和标签页切换的信号处理。
-        """
+        """设置信号连接"""
         self.custom_tab.crane_selected.connect(self.on_crane_selected)
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
         
     def fetch_data_from_db(self):
-        """从数据库获取起重机基础数据
-        
-        Returns:
-            list: 包含起重机ID、制造商和最大起重重量的数据列表
-        """
+        """从数据库获取起重机基础数据"""
         query = """
         SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
         FROM TruckCrane
@@ -160,25 +122,13 @@ class CraneSettingsDialog(QDialog):
         return self.cursor.fetchall()
         
     def on_crane_selected(self, model):
-        """处理起重机型号选择事件
-        
-        当用户选择新的起重机型号时更新相关显示和数据。
-        
-        Args:
-            model (str): 选中的起重机型号
-        """
+        """处理起重机型号选择事件"""
         self.current_crane_model = model  # 更新当前选中的起重机型号
         self.capacity_tab.update_crane_model(model)
         self.tab_widget.setTabText(1, f"{model}起重机额定起重能力表")
         
     def on_tab_changed(self, index):
-        """处理标签页切换事件
-        
-        当用户切换标签页时，更新相应标签页的数据显示。
-        
-        Args:
-            index (int): 新选中的标签页索引
-        """
+        """处理标签页切换事件"""
         if not self.cursor or not self.current_crane_model:
             return
         
@@ -531,83 +481,21 @@ class CraneCustomTab(QWidget):
             QMessageBox.warning(self, "错误", f"加载轴距和轴荷数据时发生未知错误: {str(e)}")
 
 class CraneCapacityTab(QWidget):
-    """起重机额定起重能力表标签页
-    
-    此类负责展示和管理起重机的额定起重能力数据，包括主臂和主臂+副臂两种工况下的性能表。
-    根据用户选择的工况类型（是否包含副臂）动态切换显示不同的数据表。
-    
-    主要功能：
-    1. 动态切换主臂/副臂工况显示
-    2. 展示不同工况下的起重能力数据
-    3. 管理和更新工况数据表格
-    4. 处理工况选择和数据展示
-    
-    数据流转逻辑：
-    1. 初始化时创建基本UI结构
-    2. 当选择起重机型号时，通过update_crane_model更新数据
-    3. 根据是否有副臂工况，动态切换显示模式：
-       - 无副臂：显示单一主臂起重性能表
-       - 有副臂：显示主臂和主臂+副臂两个标签页
-    4. 用户选择工况后，加载并显示对应的起重能力数据
-    
-    成员变量：
-        Str_crane_modelName (str): 当前选中的起重机型号
-        cursor (sqlite3.Cursor): 数据库游标对象
-        main_content (QWidget): 主要内容区域控件，用于显示单一主臂模式
-        main_condition_table (QTableWidget): 主臂工况表格，显示主臂工况列表
-        combined_condition_table (QTableWidget): 主臂+副臂工况表格，显示组合工况列表
-        main_capacity_table (QTableWidget): 主臂起重能力表格，显示主臂工况下的起重能力数据
-        combined_capacity_table (QTableWidget): 主臂+副臂起重能力表格，显示组合工况下的起重能力数据
-        main_capacity_title (QLabel): 主臂起重能力表标题
-        combined_capacity_title (QLabel): 主臂+副臂起重能力表标题
-        main_boom_conditions (list): 存储主臂工况数据列表
-        combined_boom_conditions (list): 存储主臂+副臂工况数据列表
-        condition_combo (QComboBox): 副臂装置工况选择下拉框
-        tab_widget (QTabWidget): 标签页控件，用于管理主臂和副臂页面
-        
-    业务逻辑：
-    1. 工况切换逻辑：
-       - 通过condition_combo选择是否有副臂工况
-       - 切换时触发on_condition_changed，决定显示单页面还是标签页
-       
-    2. 数据加载逻辑：
-       - update_crane_model：更新起重机型号，触发工况数据加载
-       - load_working_conditions：从数据库加载工况数据
-       - 根据IsJibHosCon判断是否有副臂，相应加载不同工况数据
-       
-    3. 表格切换逻辑：
-       - 标签页切换时触发on_tab_changed
-       - 清空并重新填充工况表格和起重能力表格
-       - 更新表格标题和显示状态
-       
-    4. 工况选择逻辑：
-       - 点击工况表格行触发on_condition_clicked
-       - 根据当前标签页类型加载对应的起重能力数据
-       - 更新表格标题和内容
-       
-    5. 数据展示逻辑：
-       - 主臂模式：显示幅度和主臂长度对应的起重能力
-       - 副臂模式：显示包含副臂时的起重能力数据
-       - 使用format_number格式化数值显示
-    """
+    """起重机额定起重能力表标签页"""
     def __init__(self, cursor):
         super().__init__()
-        self.Str_crane_modelName = None  # 当前选中的起重机型号，用于标识和查询数据
-        self.cursor = cursor  # 数据库游标对象，用于执行SQL查询
-        self.main_content = QWidget()  # 主要内容区域控件，用于显示单一主臂模式的界面
-        self.main_condition_table = None  # 主臂工况表格，显示主臂工况列表
-        self.combined_condition_table = None  # 主臂+副臂工况表格，显示组合工况列表
-        self.main_capacity_table = None  # 主臂起重能力表格，显示主臂工况下的起重能力数据
-        self.combined_capacity_table = None  # 主臂+副臂起重能力表格，显示组合工况下的起重能力数据
-        self.main_capacity_title = None  # 主臂起重能力表标题标签
-        self.combined_capacity_title = None  # 主臂+副臂起重能力表标题标签
-        self.main_boom_conditions = []  # 存储主臂工况数据列表，包含所有主臂工况的描述
-        self.combined_boom_conditions = []  # 存储主臂+副臂工况数据列表，包含所有组合工况的描述
-        self.condition_combo = QComboBox()  # 副臂装置工况选择下拉框，用于选择是否有副臂工况
-        self.condition_combo.addItem("否")  # 添加"否"选项，表示无副臂工况
-        self.condition_combo.addItem("是")  # 添加"是"选项，表示有副臂工况
-        self.tab_widget = QTabWidget()  # 标签页控件，用于管理主臂和副臂页面的切换
-        self.init_ui()  # 初始化用户界面
+        self.Str_crane_modelName = None
+        self.cursor = cursor
+        self.main_content = QWidget()
+        self.main_condition_table = None
+        self.combined_condition_table = None
+        self.main_capacity_table = None
+        self.combined_capacity_table = None
+        self.main_capacity_title = None
+        self.combined_capacity_title = None
+        self.main_boom_conditions = []  # Store main boom conditions
+        self.combined_boom_conditions = []  # Store combined boom conditions
+        self.init_ui()
 
     def init_ui(self):
         main_layout = QVBoxLayout()
@@ -615,11 +503,15 @@ class CraneCapacityTab(QWidget):
         # 顶部 - 副臂装置工况选择
         top_layout = QHBoxLayout()
         top_layout.addWidget(QLabel("是否有副臂吊装工况:"))
+        self.condition_combo = QComboBox()
+        self.condition_combo.addItem("否")
+        self.condition_combo.addItem("是")
         top_layout.addWidget(self.condition_combo)
         top_layout.addStretch()
         main_layout.addLayout(top_layout)
         
         # 创建标签页控件
+        self.tab_widget = QTabWidget()
         self.tab_widget.setVisible(False)  # 初始设置为不可见
         
         # 创建主臂起重性能表标签页
@@ -658,13 +550,13 @@ class CraneCapacityTab(QWidget):
         left_layout = QVBoxLayout()
         left_layout.addWidget(QLabel("主臂吊装工况:"))
         
-        # 主臂吊装工况表格
+        # 工况表格
         self.main_condition_table = QTableWidget()
         self.init_condition_table(self.main_condition_table)
         left_layout.addWidget(self.main_condition_table)
         left_layout.addStretch()
         
-        # 右侧 - 主臂吊装工况起重能力表
+        # 右侧 - 起重能力表
         right_layout = QVBoxLayout()
         title_label = QLabel("工况1【配重1.2t，支腿全伸】额定起重量(吨)")
         right_layout.addWidget(title_label)
@@ -725,27 +617,21 @@ class CraneCapacityTab(QWidget):
         try:
             if index == 0:  # 主臂起重性能表
                 self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
-                
-                # 清空并重置主臂起重能力表格
+                # Clear capacity table and reset title
                 if self.main_capacity_table:
-                    self.main_capacity_table.setRowCount(0)  # 清空所有行
-                    self.main_capacity_table.setColumnCount(1)  # 设置为只有一列
-                    self.main_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])  # 设置表头
-                
-                # 重置主臂起重能力表的标题
+                    self.main_capacity_table.setRowCount(0)
+                    self.main_capacity_table.setColumnCount(1)
+                    self.main_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
                 if self.main_capacity_title:
                     self.main_capacity_title.setText("额定起重量(吨)")
 
             elif index == 1:  # 主臂+副臂起重性能表
                 self._populate_condition_table(self.combined_condition_table, self.combined_boom_conditions)
-                
-                # 清空并重置主臂+副臂起重能力表格
+                # Clear capacity table and reset title
                 if self.combined_capacity_table:
-                    self.combined_capacity_table.setRowCount(0)  # 清空所有行
-                    self.combined_capacity_table.setColumnCount(1)  # 设置为只有一列
-                    self.combined_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])  # 设置表头
-                
-                # 重置主臂+副臂起重能力表的标题
+                    self.combined_capacity_table.setRowCount(0)
+                    self.combined_capacity_table.setColumnCount(1)
+                    self.combined_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
                 if self.combined_capacity_title:
                     self.combined_capacity_title.setText("额定起重量(吨)")
 
@@ -989,10 +875,6 @@ class CraneCapacityTab(QWidget):
             SELECT DISTINCT IsJibHosCon
             FROM TruckCraneLiftingCapacityData
             WHERE TruckCraneID = ?
-            AND IsJibHosCon IS NOT NULL
-            AND TRIM(IsJibHosCon) != ''
-            GROUP BY IsJibHosCon
-            ORDER BY IsJibHosCon
             """
 
             self.cursor.execute(query, (model,))
@@ -1005,35 +887,32 @@ class CraneCapacityTab(QWidget):
             else:
                 # If no IsJibHosCon found, assume no auxiliary boom
                 self.condition_combo.setCurrentText("否")
+                # Optionally show a warning, but maybe not necessary if load_working_conditions handles empty results gracefully
+                # QMessageBox.warning(self, "查询结果", f"未找到型号为 {model} 的副臂吊装工况信息 (IsJibHosCon)")
 
             # Load conditions into instance variables regardless of has_auxiliary
             self.load_working_conditions()
 
             # Update UI visibility based on has_auxiliary
+            self.main_content.setVisible(not has_auxiliary)
+            self.tab_widget.setVisible(has_auxiliary)
+
+            # Trigger population of the initially visible condition table
             if has_auxiliary:
-                # 显示两个标签页
-                self.main_content.setVisible(False)
-                self.tab_widget.setVisible(True)
-                # 确保标签页都可见
-                self.tab_widget.setTabEnabled(0, True)  # 启用主臂标签页
-                self.tab_widget.setTabEnabled(1, True)  # 启用主臂+副臂标签页
-                # 默认显示主臂标签页
-                self.tab_widget.setCurrentIndex(0)
-                # 触发标签页切换事件以更新数据
-                self.on_tab_changed(0)
+                 # Ensure the tab widget's current index is correct before calling on_tab_changed
+                 # It might default to 0, so explicitly set it if needed, or rely on default
+                 self.on_tab_changed(self.tab_widget.currentIndex())
             else:
-                # 只显示主臂标签页
-                self.main_content.setVisible(True)
-                self.tab_widget.setVisible(False)
-                # 直接更新主臂工况表格
-                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
-                # 清空并重置主臂起重能力表格
-                if self.main_capacity_table:
+                 # Populate the main condition table directly as it's the only one visible
+                 self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                 # Clear capacity table and reset title for main_content view
+                 if self.main_capacity_table:
                     self.main_capacity_table.setRowCount(0)
                     self.main_capacity_table.setColumnCount(1)
                     self.main_capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
-                if self.main_capacity_title:
+                 if self.main_capacity_title:
                     self.main_capacity_title.setText("额定起重量(吨)")
+
 
         except sqlite3.Error as e:
             QMessageBox.warning(self, "数据库错误", f"查询副臂吊装工况时发生错误: {str(e)}")
@@ -1055,12 +934,9 @@ class CraneCapacityTab(QWidget):
             self.tab_widget.setVisible(False)
 
     def load_working_conditions(self):
-        """加载起重机工况数据到类变量中
-        
-        逻辑说明：
-        1. 主臂工况(SpeWorkCondition)必须查询，不受IsJibHosCon影响
-        2. 只有当IsJibHosCon为"是"时才查询副臂工况(SecondSpeWorkCondition)
-        """
+        """加载起重机工况数据到类变量中"""
+        # This method now ONLY loads data into self.main_boom_conditions and self.combined_boom_conditions
+        # It does NOT update the UI tables directly.
         self.main_boom_conditions = []
         self.combined_boom_conditions = []
 
@@ -1068,64 +944,49 @@ class CraneCapacityTab(QWidget):
             return
 
         try:
-            # 1. 首先查询是否有副臂吊装工况
-            query_check = """
-            SELECT DISTINCT SpeWorkCondition
-            FROM TruckCraneLiftingCapacityData
-            WHERE TruckCraneID = ?
-            AND SpeWorkCondition IS NOT NULL
-            AND TRIM(SpeWorkCondition) != ''
-            GROUP BY SpeWorkCondition
-            ORDER BY SpeWorkCondition
-            """
-            self.cursor.execute(query_check, (self.Str_crane_modelName,))
-            result = self.cursor.fetchone()
-            has_jib = result[0] == "是" if result else False
-
-            # 2. 查询主臂工况数据（不受IsJibHosCon影响）
+            # 加载主臂工况数据
             query_main = """
             SELECT DISTINCT SpeWorkCondition
             FROM TruckCraneLiftingCapacityData
             WHERE TruckCraneID = ?
             AND SpeWorkCondition IS NOT NULL
-            AND TRIM(SpeWorkCondition) != ''
-            GROUP BY SpeWorkCondition
+            AND SpeWorkCondition != ''
+            AND (SecondSpeWorkCondition IS NULL OR TRIM(SecondSpeWorkCondition) = '') -- Use TRIM
             ORDER BY SpeWorkCondition
             """
+
             self.cursor.execute(query_main, (self.Str_crane_modelName,))
             conditions_main = self.cursor.fetchall()
             if conditions_main:
                 self.main_boom_conditions = sorted(list(set([cond[0] for cond in conditions_main if cond[0]])))
 
-            # 3. 如果有副臂，才查询副臂工况数据
-            if has_jib:
-                query_combined = """
-                SELECT DISTINCT SecondSpeWorkCondition
-                FROM TruckCraneLiftingCapacityData
-                WHERE TruckCraneID = ?
-                AND IsJibHosCon = '是'
-                AND SecondSpeWorkCondition IS NOT NULL
-                AND TRIM(SecondSpeWorkCondition) != ''
-                GROUP BY SecondSpeWorkCondition
-                ORDER BY SecondSpeWorkCondition
-                """
-                self.cursor.execute(query_combined, (self.Str_crane_modelName,))
-                conditions_combined = self.cursor.fetchall()
-                if conditions_combined:
-                    self.combined_boom_conditions = sorted(list(set([cond[0] for cond in conditions_combined if cond[0]])))
+            # 加载副臂工况数据
+            query_combined = """
+            SELECT DISTINCT SecondSpeWorkCondition
+            FROM TruckCraneLiftingCapacityData
+            WHERE TruckCraneID = ?
+            AND SecondSpeWorkCondition IS NOT NULL
+            AND TRIM(SecondSpeWorkCondition) != '' -- Use TRIM here too
+            ORDER BY SecondSpeWorkCondition
+            """
 
-            # 添加调试输出
-            print(f"是否有副臂: {has_jib}")
-            print(f"查询到的主臂工况数据: {self.main_boom_conditions}")
-            print(f"查询到的副臂工况数据: {self.combined_boom_conditions}")
-            print(f"当前起重机型号: {self.Str_crane_modelName}")
+            self.cursor.execute(query_combined, (self.Str_crane_modelName,))
+            conditions_combined = self.cursor.fetchall()
+            if conditions_combined:
+                self.combined_boom_conditions = sorted(list(set([cond[0] for cond in conditions_combined if cond[0]])))
+
+            # Print loaded conditions for debugging (optional)
+            # print(f"Loaded Main Boom Conditions: {self.main_boom_conditions}")
+            # print(f"Loaded Combined Boom Conditions: {self.combined_boom_conditions}")
 
         except sqlite3.Error as e:
             QMessageBox.warning(self, "数据库错误", f"加载工况数据时发生错误: {str(e)}")
+            # Clear lists on error
             self.main_boom_conditions = []
             self.combined_boom_conditions = []
         except Exception as e:
             QMessageBox.warning(self, "错误", f"加载工况数据时发生未知错误: {str(e)}")
+            # Clear lists on error
             self.main_boom_conditions = []
             self.combined_boom_conditions = []
 
