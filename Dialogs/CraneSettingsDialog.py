@@ -61,20 +61,42 @@ print(f"ROOT_DIR: {ROOT_DIR}")
 class CraneSettingsDialog(QDialog):
     """起重机械设置主对话框类
     
-    负责管理整个对话框的布局和数据流转，包括：
-    1. 数据库连接和基础数据获取
-    2. 标签页管理
-    3. 用户交互响应
+    此类是整个起重机械设置模块的主要界面类，负责管理和展示起重机的各项设置。
+    包括基本信息配置、性能参数管理和起重能力表的展示与编辑。
+    
+    主要功能：
+    1. 管理数据库连接和数据存取
+    2. 提供起重机基本信息的配置界面
+    3. 展示和管理起重能力表
+    4. 处理用户交互和数据更新
+    
+    属性：
+        data (list): 存储从数据库获取的起重机基础数据
+        current_crane_model (str): 当前选中的起重机型号
+        cursor (sqlite3.Cursor): 数据库游标对象
+        connection (sqlite3.Connection): 数据库连接对象
+        tab_widget (QTabWidget): 标签页控件，用于管理不同的设置页面
+        custom_tab (CraneCustomTab): 起重机自定义标签页实例
+        capacity_tab (CraneCapacityTab): 起重机额定起重能力表标签页实例
     """
     
     def __init__(self, parent=None):
+        """初始化起重机械设置对话框
+        
+        Args:
+            parent (QWidget, optional): 父窗口对象. Defaults to None.
+        """
         super().__init__(parent)
-        self.data = []
-        self.current_crane_model = None  # 添加当前选中的起重机型号属性
+        self.data = []  # 存储从数据库获取的起重机基础数据
+        self.current_crane_model = None  # 当前选中的起重机型号
         self.init_ui()
         
     def init_ui(self):
-        """初始化用户界面"""
+        """初始化用户界面
+        
+        设置对话框的基本属性，包括标题、大小等，并初始化各个子组件。
+        同时建立数据库连接并创建基本布局。
+        """
         self.setWindowTitle("起重机械设置")
         self.resize(800, 600)
         self.setup_database()
@@ -82,7 +104,11 @@ class CraneSettingsDialog(QDialog):
         self.setup_connections()
         
     def setup_database(self):
-        """设置数据库连接"""
+        """设置数据库连接
+        
+        建立与SQLite数据库的连接，初始化游标对象，
+        并从数据库获取初始数据。如果连接失败，将显示错误消息。
+        """
         try:
             db_path = os.path.join(ROOT_DIR, 'CraneDataBase')
             self.connection = sqlite3.connect(db_path)
@@ -92,7 +118,11 @@ class CraneSettingsDialog(QDialog):
             QMessageBox.critical(self, "数据库错误", f"连接数据库失败: {e}")
             
     def create_layout(self):
-        """创建主布局"""
+        """创建主布局
+        
+        设置对话框的整体布局，包括创建和添加标签页控件，
+        初始化自定义标签页和起重能力表标签页。
+        """
         layout = QVBoxLayout()
         self.tab_widget = QTabWidget()
 
@@ -108,12 +138,20 @@ class CraneSettingsDialog(QDialog):
         self.setLayout(layout)
         
     def setup_connections(self):
-        """设置信号连接"""
+        """设置信号连接
+        
+        建立各个控件之间的信号连接，处理用户交互事件。
+        包括起重机选择和标签页切换的信号处理。
+        """
         self.custom_tab.crane_selected.connect(self.on_crane_selected)
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
         
     def fetch_data_from_db(self):
-        """从数据库获取起重机基础数据"""
+        """从数据库获取起重机基础数据
+        
+        Returns:
+            list: 包含起重机ID、制造商和最大起重重量的数据列表
+        """
         query = """
         SELECT TruckCraneID, CraneManufacturers, MaxLiftingWeight
         FROM TruckCrane
@@ -122,13 +160,25 @@ class CraneSettingsDialog(QDialog):
         return self.cursor.fetchall()
         
     def on_crane_selected(self, model):
-        """处理起重机型号选择事件"""
+        """处理起重机型号选择事件
+        
+        当用户选择新的起重机型号时更新相关显示和数据。
+        
+        Args:
+            model (str): 选中的起重机型号
+        """
         self.current_crane_model = model  # 更新当前选中的起重机型号
         self.capacity_tab.update_crane_model(model)
         self.tab_widget.setTabText(1, f"{model}起重机额定起重能力表")
         
     def on_tab_changed(self, index):
-        """处理标签页切换事件"""
+        """处理标签页切换事件
+        
+        当用户切换标签页时，更新相应标签页的数据显示。
+        
+        Args:
+            index (int): 新选中的标签页索引
+        """
         if not self.cursor or not self.current_crane_model:
             return
         

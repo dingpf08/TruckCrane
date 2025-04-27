@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/ztzp-ConCaSys.iml" filepath="$PROJECT_DIR$/.idea/ztzp-ConCaSys.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../ztzp-ttms/.idea/ztzp-ttms.iml" filepath="$PROJECT_DIR$/../ztzp-ttms/.idea/ztzp-ttms.iml" />
     </modules>
   </component>
 </project>
