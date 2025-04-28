@@ -65,6 +65,15 @@ class CraneSettingsDialog(QDialog):
     1. 数据库连接和基础数据获取
     2. 标签页管理
     3. 用户交互响应
+
+    成员变量:
+        data (list): 存储从数据库获取的起重机基础数据
+        current_crane_model (str): 当前选中的起重机型号
+        connection (sqlite3.Connection): 数据库连接对象
+        cursor (sqlite3.Cursor): 数据库游标对象
+        tab_widget (QTabWidget): 标签页控件
+        custom_tab (CraneCustomTab): 起重机自定义标签页
+        capacity_tab (CraneCapacityTab): 起重机额定起重能力表标签页
     """
     
     def __init__(self, parent=None):
@@ -228,7 +237,29 @@ class CraneSettingsDialog(QDialog):
             print(f"错误详情: {str(e)}")
 
 class CraneCustomTab(QWidget):
-    """起重机自定义标签页"""
+    """起重机自定义标签页
+
+    成员变量:
+        data (list): 存储起重机基础数据的列表
+        cursor (sqlite3.Cursor): 数据库游标对象
+        crane_type_combo (QComboBox): 起重机类型选择下拉框
+        table (QTableWidget): 主数据表格
+        manufacturer_edit (QLineEdit): 起重机厂家输入框
+        model_edit (QLineEdit): 起重机型号输入框
+        calc_checkbox (QCheckBox): 轴距及轴荷计算复选框
+        axle_count_edit (QLineEdit): 轴数输入框
+        first_axle_load_edit (QLineEdit): 第一排轴荷输入框
+        axle_table (QTableWidget): 轴距表格
+        total_weight_edit (QLineEdit): 总重输入框
+        long_dis_edit (QLineEdit): 支腿纵向距离输入框
+        horiz_dis_edit (QLineEdit): 支腿横向距离输入框
+        enter_rated_combo (QComboBox): 额定起重量表录入选择框
+        dis_to_ground_edit (QLineEdit): 主臂铰链中心至地面距离输入框
+        dis_to_rotacen_edit (QLineEdit): 主臂铰链中心至回转中心距离输入框
+
+    信号:
+        crane_selected (str): 当选择起重机型号时发出的信号
+    """
     crane_selected = pyqtSignal(str)
 
     def __init__(self, data, cursor):
@@ -573,7 +604,25 @@ class CraneCustomTab(QWidget):
             QMessageBox.warning(self, "错误", f"加载轴距和轴荷数据时发生未知错误: {str(e)}")
 
 class CraneCapacityTab(QWidget):
-    """起重机额定起重能力表标签页"""
+    """起重机额定起重能力表标签页
+
+    成员变量:
+        Str_crane_modelName (str): 当前选中的起重机型号
+        cursor (sqlite3.Cursor): 数据库游标对象
+        main_content (QWidget): 主要内容区域控件
+        main_condition_table (QTableWidget): 主臂工况表格
+        combined_condition_table (QTableWidget): 主臂+副臂工况表格
+        main_capacity_table (QTableWidget): 主臂起重能力表格
+        combined_capacity_table (QTableWidget): 主臂+副臂起重能力表格
+        main_capacity_title (QLabel): 主臂起重能力表标题
+        combined_capacity_title (QLabel): 主臂+副臂起重能力表标题
+        main_boom_conditions (list): 存储主臂工况数据
+        combined_boom_conditions (list): 存储主臂+副臂工况数据
+        condition_combo (QComboBox): 副臂装置工况选择下拉框
+        tab_widget (QTabWidget): 标签页控件
+        main_boom_tab (QWidget): 主臂标签页
+        combined_boom_tab (QWidget): 主臂+副臂标签页
+    """
     def __init__(self, cursor):
         super().__init__()
         self.Str_crane_modelName = None
@@ -803,7 +852,23 @@ class CraneCapacityTab(QWidget):
             print(f"错误详情: {str(e)}")  # 添加错误详情输出
 
     def init_main_boom_tab(self):
-        """初始化主臂起重性能表标签页"""
+        """初始化主臂起重性能表标签页
+        
+        此方法负责创建和配置主臂起重性能表的标签页界面，包括：
+        1. 创建主要布局和分组
+        2. 设置额定起重量确定方法选择器
+        3. 配置左侧主臂工况列表
+        4. 配置右侧起重能力表格
+        5. 设置表格样式和行为
+        
+        布局结构：
+        - 主布局（垂直）
+            - 主臂起重性能表组
+                - 额定起重量确定方法（下拉框）
+                - 内容区域（水平分布）
+                    - 左侧：主臂工况列表
+                    - 右侧：起重能力表格
+        """
         layout = QVBoxLayout()
 
         # 主臂起重性能表组
@@ -882,17 +947,21 @@ class CraneCapacityTab(QWidget):
         self.main_capacity_table.setMinimumHeight(200)
         right_layout.addWidget(self.main_capacity_table)
 
+        # 设置左右布局的比例为1:2
         content_layout.addLayout(left_layout, 1)
         content_layout.addLayout(right_layout, 2)
 
+        # 组装所有布局
         group_layout.addLayout(content_layout)
         main_group.setLayout(group_layout)
         layout.addWidget(main_group)
 
+        # 确保所有组件可见
         main_group.setVisible(True)
         self.main_condition_table.setVisible(True)
         self.main_capacity_table.setVisible(True)
 
+        # 设置标签页布局
         self.main_boom_tab.setLayout(layout)
 
     def init_combined_boom_tab(self):
