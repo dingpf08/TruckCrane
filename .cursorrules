@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "projectStructure": {
+    "description": "ConCaSys - Construction Calculation System (建筑计算系统)",
+    "mainComponents": {
+      "core": {
+        "path": "/core",
+        "description": "核心计算模块 (Core calculation modules)",
+        "submodules": {
+          "crane": "起重机计算模块 (Crane calculation module)",
+          "foundation": "基础计算模块 (Foundation calculation module)",
+          "structure": "结构计算模块 (Structure calculation module)"
+        }
+      },
+      "gui": {
+        "path": "/gui",
+        "description": "图形用户界面 (Graphical User Interface)",
+        "components": {
+          "dialogs": "对话框组件 (Dialog components)",
+          "widgets": "自定义控件 (Custom widgets)",
+          "views": "视图组件 (View components)"
+        }
+      },
+      "database": {
+        "path": "/database",
+        "description": "数据库相关模块 (Database related modules)",
+        "components": {
+          "models": "数据模型 (Data models)",
+          "migrations": "数据库迁移 (Database migrations)",
+          "queries": "数据库查询 (Database queries)"
+        }
+      },
+      "utils": {
+        "path": "/utils",
+        "description": "工具函数模块 (Utility functions)",
+        "components": {
+          "helpers": "辅助函数 (Helper functions)",
+          "validators": "验证器 (Validators)",
+          "converters": "数据转换器 (Data converters)"
+        }
+      },
+      "tests": {
+        "path": "/tests",
+        "description": "测试模块 (Test modules)",
+        "components": {
+          "unit": "单元测试 (Unit tests)",
+          "integration": "集成测试 (Integration tests)"
+        }
+      },
+      "docs": {
+        "path": "/docs",
+        "description": "文档 (Documentation)",
+        "components": {
+          "api": "API文档 (API documentation)",
+          "user": "用户手册 (User manual)",
+          "dev": "开发文档 (Developer documentation)"
+        }
+      }
+    }
+  },
+  "rules": {
+    "*.py": {
+      "language": "python",
+      "indent": {
+        "type": "spaces",
+        "size": 4
+      },
+      "maxLineLength": 120,
+      "encoding": "utf-8",
+      "commentStyle": {
+        "singleLine": "#",
+        "multiLine": {
+          "start": "\"\"\"",
+          "end": "\"\"\""
+        }
+      },
+      "docstringFormat": {
+        "style": "google",
+        "requireModuleDocstring": true,
+        "requireClassDocstring": true,
+        "requireFunctionDocstring": true,
+        "allowBilingual": true
+      }
+    },
+    "*.{js,jsx,ts,tsx}": {
+      "language": "typescript",
+      "indent": {
+        "type": "spaces",
+        "size": 2
+      },
+      "maxLineLength": 100,
+      "semicolons": true,
+      "quotes": "single",
+      "trailingComma": "es5"
+    },
+    "*.json": {
+      "indent": {
+        "type": "spaces",
+        "size": 2
+      }
+    },
+    "*.md": {
+      "maxLineLength": 80
+    }
+  },
+  "ignore": [
+    "node_modules",
+    "__pycache__",
+    "*.pyc",
+    "build",
+    "dist",
+    "venv",
+    ".git"
+  ],
+  "formatting": {
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "endOfLine": "lf"
+  }
+} 
