@@ -1,24 +1,13 @@
-# Python相关 (Python related)
+# Python编译缓存 (Python compilation cache)
 __pycache__/
 *.py[cod]
 *.so
-.Python
-*.egg
-*.egg-info/
-dist/
-build/
-eggs/
-parts/
-bin/
-var/
-sdist/
-develop-eggs/
-.installed.cfg
-lib/
-lib64/
+
+# 虚拟环境 (Virtual environments)
 venv/
 env/
 .env/
+.venv/
 
 # IDE相关 (IDE related)
 .idea/
@@ -47,6 +36,9 @@ Thumbs.db
 node_modules/
 package-lock.json
 yarn.lock
+dist/
+build/
+*.egg-info/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -56,33 +48,28 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# 文档生成相关 (Documentation related)
-_build/
-/site
-.docusaurus
 
 # 其他 (Others)
 .git/
 .gitignore
-.env
-.env.*
-!.env.example
 *.zip
 *.tar.gz
 *.rar
 *.7z
 
-# 项目特定文件 (Project specific files)
-*.dwg
-*.dxf
-*.xlsx
-*.xls
-*.csv
+# 临时输出目录 (Temporary output directories)
 temp/
 output/
-results/ 
+results/
+
+# Python相关 (Python related)
+.Python
+*.egg
+parts/
+bin/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/ 
