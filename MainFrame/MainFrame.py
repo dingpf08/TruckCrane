@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         # 这个数据在Tool_Bar.py中反序列化的时候，会给到MainFrame.py的self.m_dialog_data_map = {}  # 新增：存储每个对话框的数据，键为对话框的UUID，值为字典类型的数据，关闭标签且选择
         self.initUI()
         print(f"MainWindow中地址为：{self}")
-#
+##
     def initUI(self):
         self.setWindowTitle('施工计算软件')
         self.setGeometry(100, 100, 800, 600)
