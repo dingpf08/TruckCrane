@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "server": {
+    "jdbc": {
+      "enabled": true,
+      "settings": {
+        "maxPoolSize": 10,
+        "minIdle": 5,
+        "idleTimeout": 300000,
+        "connectionTimeout": 30000,
+        "maxLifetime": 1200000
+      },
+      "monitoring": {
+        "enabled": true,
+        "metricsInterval": 60000
+      }
+    }
+  },
+  "tools": {
+    "decompiler": {
+      "type": "fernflower",
+      "args": [
+        "-dgs=1",
+        "-hdc=0",
+        "-asc=1",
+        "-udv=0"
+      ]
+    },
+    "mapper": {
+      "type": "tsrg",
+      "reverse": false,
+      "generateDocs": true
+    }
+  },
+  "paths": {
+    "sources": "./src/main/java",
+    "resources": "./src/main/resources",
+    "mappings": "./mappings",
+    "logs": "./logs/mcp",
+    "temp": "./.mcp/temp"
+  }
+} 
