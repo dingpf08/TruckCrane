@@ -72,4 +72,14 @@ sdist/
 develop-eggs/
 .installed.cfg
 lib/
-lib64/ 
+lib64/
+
+# MCP 相关忽略
+.mcp/temp/
+.mcp/logs/
+*.mapping
+*.srg
+*.tsrg
+*.csrg
+decompiled/
+recompiled/ 

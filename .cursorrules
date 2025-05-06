@@ -116,5 +116,34 @@
     "trimTrailingWhitespace": true,
     "insertFinalNewline": true,
     "endOfLine": "lf"
+  },
+  "mcp": {
+    "jdbc": {
+      "server": {
+        "driver": "com.mysql.jdbc.Driver",
+        "url": "jdbc:mysql://localhost:3306/your_database",
+        "username": "${MCP_DB_USER}",
+        "password": "${MCP_DB_PASSWORD}",
+        "poolSize": 10,
+        "connectionTimeout": 30000
+      },
+      "mappings": {
+        "location": "./mappings",
+        "format": "tsrg",
+        "autoUpdate": true
+      },
+      "decompiler": {
+        "type": "fernflower",
+        "options": {
+          "removeBoilerplate": true,
+          "removeComments": false
+        }
+      }
+    },
+    "workspace": {
+      "sourcesDir": "./src/main/java",
+      "resourcesDir": "./src/main/resources",
+      "tempDir": "./.mcp/temp"
+    }
   }
 } 
