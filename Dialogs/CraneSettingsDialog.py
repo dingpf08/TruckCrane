@@ -720,13 +720,10 @@ class CraneCapacityTab(QWidget):
         left_layout = QVBoxLayout()
         left_layout.addWidget(QLabel("主臂吊装工况:"))
         
-        # 创建工况表格
-        # Create condition table
+        # 创建主臂工况表格，与主臂+副臂工况表设置保持一致
         self.main_condition_table = QTableWidget()
         self.main_condition_table.setColumnCount(2)
-        self.main_condition_table.setHorizontalHeaderLabels(["主臂工况编号", "主臂具体工况"])
-        # 去除特殊设置：不设置列宽、样式、选择模式、最小尺寸、策略等
-        # 只保留信号连接
+        self.main_condition_table.setHorizontalHeaderLabels(["工况编号", "具体工况"])
         self.main_condition_table.itemClicked.connect(self.on_condition_clicked)
         left_layout.addWidget(self.main_condition_table)
         left_layout.addStretch()
