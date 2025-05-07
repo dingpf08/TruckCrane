@@ -527,7 +527,7 @@ class CraneCustomTab(QWidget):
                 self.enter_rated_combo.setCurrentText("是" if detail[4] == "是" else "否")  # 是否有额定起重量表
                 self.dis_to_ground_edit.setText(str(detail[5]))      # 主臂铰链中心至地面距离h
                 self.dis_to_rotacen_edit.setText(str(detail[6]))     # 主臂铰链中心至回转中心距离a1
-                
+                #测试
                 # 发送型号选择信号
                 self.crane_selected.emit(crane_model)
                 
