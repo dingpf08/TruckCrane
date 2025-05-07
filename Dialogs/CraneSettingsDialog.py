@@ -183,6 +183,26 @@ class CraneSettingsDialog(QDialog):
                     self.capacity_tab.main_capacity_title.setText("额定起重量(吨)")
 
             elif index == 1:  # 主臂+副臂起重性能表
+                # 重新加载主臂工况数据 - 只检查SpeWorkCondition是否有值
+                query_main = """
+                SELECT DISTINCT SpeWorkCondition
+                FROM TruckCraneLiftingCapacityData
+                WHERE TruckCraneID = ?
+                AND SpeWorkCondition IS NOT NULL
+                AND TRIM(SpeWorkCondition) != ''
+                ORDER BY SpeWorkCondition
+                """
+                self.cursor.execute(query_main, (self.current_crane_model,))
+                main_conditions = self.cursor.fetchall()
+                if main_conditions:
+                    self.capacity_tab.main_boom_conditions = [cond[0] for cond in main_conditions]
+                    print(f"副臂标签页 - 也获取到的主臂工况: {self.capacity_tab.main_boom_conditions}")
+                else:
+                    print("副臂标签页 - 未获取到主臂工况数据")
+                    self.capacity_tab.main_boom_conditions = []
+                # 更新主臂工况表格
+                self.capacity_tab._populate_condition_table(self.capacity_tab.main_condition_table, self.capacity_tab.main_boom_conditions)
+
                 # 重新加载主臂+副臂工况数据
                 query = """
                 SELECT DISTINCT SecondSpeWorkCondition
@@ -1174,6 +1194,26 @@ class CraneCapacityTab(QWidget):
                     self.main_capacity_title.setText("额定起重量(吨)")
 
             elif index == 1:  # 主臂+副臂起重性能表
+                # 重新加载主臂工况数据 - 只检查SpeWorkCondition是否有值
+                query_main = """
+                SELECT DISTINCT SpeWorkCondition
+                FROM TruckCraneLiftingCapacityData
+                WHERE TruckCraneID = ?
+                AND SpeWorkCondition IS NOT NULL
+                AND TRIM(SpeWorkCondition) != ''
+                ORDER BY SpeWorkCondition
+                """
+                self.cursor.execute(query_main, (self.Str_crane_modelName,))
+                main_conditions = self.cursor.fetchall()
+                if main_conditions:
+                    self.main_boom_conditions = [cond[0] for cond in main_conditions]
+                    print(f"副臂标签页 - 也获取到的主臂工况: {self.main_boom_conditions}")
+                else:
+                    print("副臂标签页 - 未获取到主臂工况数据")
+                    self.main_boom_conditions = []
+                # 更新主臂工况表格
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+
                 # 重新加载主臂+副臂工况数据
                 query = """
                 SELECT DISTINCT SecondSpeWorkCondition
