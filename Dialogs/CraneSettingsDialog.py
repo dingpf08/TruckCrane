@@ -631,19 +631,24 @@ class CraneCapacityTab(QWidget):
         combined_boom_tab (QWidget): 主臂+副臂标签页
     """
     def __init__(self, cursor):
+        """初始化起重机额定起重能力表标签页
+        Args:
+            cursor (sqlite3.Cursor): 数据库游标对象
+        主要完成界面控件的创建和成员变量的初始化。
+        """
         super().__init__()
-        self.Str_crane_modelName = None
-        self.cursor = cursor
-        self.main_content = QWidget()
-        self.main_condition_table = None
-        self.combined_condition_table = None
-        self.main_capacity_table = None
-        self.combined_capacity_table = None
-        self.main_capacity_title = None
-        self.combined_capacity_title = None
-        self.main_boom_conditions = []  # Store main boom conditions
-        self.combined_boom_conditions = []  # Store combined boom conditions
-        self.init_ui()
+        self.Str_crane_modelName = None  # 当前选中的起重机型号
+        self.cursor = cursor  # 数据库游标对象
+        self.main_content = QWidget()  # 主要内容区域控件
+        self.main_condition_table = None  # 主臂工况表格控件
+        self.combined_condition_table = None  # 主臂+副臂工况表格控件
+        self.main_capacity_table = None  # 主臂起重能力表格控件
+        self.combined_capacity_table = None  # 主臂+副臂起重能力表格控件
+        self.main_capacity_title = None  # 主臂起重能力表标题控件
+        self.combined_capacity_title = None  # 主臂+副臂起重能力表标题控件
+        self.main_boom_conditions = []  # 存储主臂工况数据的列表
+        self.combined_boom_conditions = []  # 存储主臂+副臂工况数据的列表
+        self.init_ui()  # 初始化界面
 
     def init_ui(self):
         """初始化用户界面
