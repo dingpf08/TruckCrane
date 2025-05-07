@@ -997,7 +997,8 @@ class CraneCapacityTab(QWidget):
             if capacity_title:
                 capacity_title.setText(f"工况{item.row() + 1}【{condition}】额定起重量(吨)")
             # 查询对应的起重能力数据
-            if table == self.main_condition_table_main or table == self.main_condition_table:
+            if (self.main_content.isVisible() or (not self.main_content.isVisible() and self.tab_widget.currentWidget() == self.main_boom_tab)):
+                # 主臂工况，无论主界面还是tab，都只查SpeWorkCondition
                 query = """
                 SELECT DISTINCT 
                     TruckCraneRange,           -- 汽车吊幅度
@@ -1006,7 +1007,6 @@ class CraneCapacityTab(QWidget):
                 FROM TruckCraneLiftingCapacityData
                 WHERE TruckCraneID = ?
                 AND SpeWorkCondition = ?
-                AND (SecondSpeWorkCondition IS NULL OR SecondSpeWorkCondition = '')
                 AND TruckCraneRatedLiftingCap IS NOT NULL
                 AND TruckCraneRatedLiftingCap != ''
                 ORDER BY CAST(TruckCraneRange AS FLOAT)
