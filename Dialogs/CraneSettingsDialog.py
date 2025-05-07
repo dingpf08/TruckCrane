@@ -141,7 +141,7 @@ class CraneSettingsDialog(QDialog):
         self.capacity_tab.update_crane_model(model)
         self.tab_widget.setTabText(1, f"{model}起重机额定起重能力表")
         
-    def on_tab_changed(self, index):
+    def on_tab_changed(self, index):#暂时放弃 2025.05.07日 如果一个汽车吊既有主臂工况 又有主臂+副臂工况  切换到起重机额定起重能力表的时候，主臂吊装工况显示不出来
         """处理标签页切换事件"""
         try:
             print(f"切换到标签页 {index}")  # 添加日志
@@ -723,7 +723,11 @@ class CraneCapacityTab(QWidget):
         # 创建工况表格
         # Create condition table
         self.main_condition_table = QTableWidget()
-        self.init_condition_table(self.main_condition_table)
+        self.main_condition_table.setColumnCount(2)
+        self.main_condition_table.setHorizontalHeaderLabels(["主臂工况编号", "主臂具体工况"])
+        # 去除特殊设置：不设置列宽、样式、选择模式、最小尺寸、策略等
+        # 只保留信号连接
+        self.main_condition_table.itemClicked.connect(self.on_condition_clicked)
         left_layout.addWidget(self.main_condition_table)
         left_layout.addStretch()
         
@@ -829,38 +833,9 @@ class CraneCapacityTab(QWidget):
         self.main_condition_table = QTableWidget()
         self.main_condition_table.setColumnCount(2)
         self.main_condition_table.setHorizontalHeaderLabels(["主臂工况编号", "主臂具体工况"])
-        self.main_condition_table.horizontalHeader().setStretchLastSection(True)
-        self.main_condition_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.main_condition_table.setColumnWidth(0, 100)
-        self.main_condition_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.main_condition_table.setSelectionMode(QTableWidget.SingleSelection)
-
-        # 设置表格的最小尺寸和策略
-        self.main_condition_table.setMinimumWidth(300)
-        self.main_condition_table.setMinimumHeight(200)
-        self.main_condition_table.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        # 设置表格样式
-        self.main_condition_table.setStyleSheet("""
-            QTableWidget {
-                border: 1px solid #d3d3d3;
-                gridline-color: #d3d3d3;
-                background-color: white;
-            }
-            QTableWidget::item {
-                padding: 5px;
-            }
-            QTableWidget::item:selected {
-                background-color: #0078D7;
-                color: white;
-            }
-            QHeaderView::section {
-                background-color: #f0f0f0;
-                padding: 5px;
-                border: 1px solid #d3d3d3;
-            }
-        """)
-
+        # 去除特殊设置：不设置列宽、样式、选择模式、最小尺寸、策略等
+        # 只保留信号连接
+        self.main_condition_table.itemClicked.connect(self.on_condition_clicked)
         left_layout.addWidget(self.main_condition_table)
 
         # 右侧 - 起重能力表
