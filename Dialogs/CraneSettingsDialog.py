@@ -1062,7 +1062,7 @@ class CraneCapacityTab(QWidget):
                 
                 # 确保主臂工况数据在切换时正确显示
                 print("更新主臂工况表格...")
-                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)  # 【行清空点】可能清空self.main_condition_table的所有行内容
                 print("更新主臂+副臂工况表格...")
                 self._populate_condition_table(self.combined_condition_table, self.combined_boom_conditions)
                 
@@ -1188,7 +1188,7 @@ class CraneCapacityTab(QWidget):
                     self.main_boom_conditions = []
 
                 # 更新主臂工况表格
-                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)  # 【行清空点】可能清空self.main_condition_table的所有行内容
                 
                 # 重置主臂起重能力表
                 if self.main_capacity_table:
@@ -1217,7 +1217,7 @@ class CraneCapacityTab(QWidget):
                     print("副臂标签页 - 未获取到主臂工况数据")
                     self.main_boom_conditions = []
                 # 更新主臂工况表格
-                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)  # 【行清空点】可能清空self.main_condition_table的所有行内容
 
                 # 重新加载主臂+副臂工况数据
                 query = """
@@ -1500,7 +1500,7 @@ class CraneCapacityTab(QWidget):
                 # 如果有副臂工况，显示标签页模式
                 self.tab_widget.setCurrentIndex(0)  # 默认显示主臂标签页
                 # 更新两个标签页的数据
-                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)
+                self._populate_condition_table(self.main_condition_table, self.main_boom_conditions)  # 【行清空点】可能清空self.main_condition_table的所有行内容
                 self._populate_condition_table(self.combined_condition_table, self.combined_boom_conditions)
             else:
                 # 如果只有主臂工况，显示主界面模式
