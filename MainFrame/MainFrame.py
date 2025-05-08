@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.m_toolbar=ToolBar(self) # 2、水平中间添加工具栏
         self.m_statusbar=StatusBar(self)# 3、底部设置状态栏
         self.m_ECST=ECSTabWidget(self)# 4、设置中心标签页
-        # 应用全局样式表
+        # 应用全局样式表 test
         self.setStyleSheet("""
                 QMainWindow {
                     background-color: #f0f0f0; /* 浅灰色背景 */
