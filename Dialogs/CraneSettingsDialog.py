@@ -94,6 +94,7 @@ class CraneSettingsDialog(QDialog):
         self.setup_database()
         self.create_layout()
         self.setup_connections()
+        self.set_readonly()  # 设置只读模式
         
     def setup_database(self):
         """设置数据库连接"""
@@ -232,6 +233,24 @@ class CraneSettingsDialog(QDialog):
             error_msg = f"切换标签页时发生错误: {str(e)}"
             print(error_msg)
             QMessageBox.warning(self, "错误", error_msg)
+
+    def set_readonly(self):
+        # QLineEdit
+        for widget in self.findChildren(QLineEdit):
+            widget.setReadOnly(True)
+        # QComboBox
+        for widget in self.findChildren(QComboBox):
+            widget.setEnabled(False)
+        # QCheckBox
+        for widget in self.findChildren(QCheckBox):
+            widget.setEnabled(False)
+        # QTableWidget
+        for widget in self.findChildren(QTableWidget):
+            widget.setEditTriggers(QTableWidget.NoEditTriggers)
+            widget.setSelectionMode(QTableWidget.NoSelection)
+        # QPushButton
+        for widget in self.findChildren(QPushButton):
+            widget.setEnabled(False)
 
 class CraneCustomTab(QWidget):
     """起重机自定义标签页
@@ -415,6 +434,7 @@ class CraneCustomTab(QWidget):
 
         # 连接信号
         self.table.itemClicked.connect(self.on_item_clicked)
+        self.set_readonly()  # 设置只读模式
 
     def on_crane_type_changed(self, index):
         """Handle changes in crane type selection."""
@@ -600,6 +620,19 @@ class CraneCustomTab(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "错误", f"加载轴距和轴荷数据时发生未知错误: {str(e)}")
 
+    def set_readonly(self):
+        for widget in self.findChildren(QLineEdit):
+            widget.setReadOnly(True)
+        for widget in self.findChildren(QComboBox):
+            widget.setEnabled(False)
+        for widget in self.findChildren(QCheckBox):
+            widget.setEnabled(False)
+        for widget in self.findChildren(QTableWidget):
+            widget.setEditTriggers(QTableWidget.NoEditTriggers)
+            widget.setSelectionMode(QTableWidget.NoSelection)
+        for widget in self.findChildren(QPushButton):
+            widget.setEnabled(False)
+
 class CraneCapacityTab(QWidget):
     """起重机额定起重能力表标签页"""
     def __init__(self, cursor):
@@ -780,6 +813,7 @@ class CraneCapacityTab(QWidget):
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
         self.main_content.setVisible(True)
         self.tab_widget.setVisible(False)
+        self.set_readonly()  # 设置只读模式
 
     def on_condition_changed(self, text):
         try:
@@ -1196,6 +1230,19 @@ class CraneCapacityTab(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "错误", f"更新起重机型号时发生未知错误: {str(e)}")
             print(f"错误详情: {str(e)}")
+
+    def set_readonly(self):
+        for widget in self.findChildren(QLineEdit):
+            widget.setReadOnly(True)
+        for widget in self.findChildren(QComboBox):
+            widget.setEnabled(False)
+        for widget in self.findChildren(QCheckBox):
+            widget.setEnabled(False)
+        for widget in self.findChildren(QTableWidget):
+            widget.setEditTriggers(QTableWidget.NoEditTriggers)
+            widget.setSelectionMode(QTableWidget.NoSelection)
+        for widget in self.findChildren(QPushButton):
+            widget.setEnabled(False)
 
 if __name__ == '__main__':
     import sys
