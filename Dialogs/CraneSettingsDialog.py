@@ -1040,32 +1040,32 @@ class CraneCapacityTab(QWidget):
             elif table == self.combined_condition_table:
                 query = """
                 SELECT DISTINCT 
-                    TruckCraneRange,           -- 汽车吊幅度
-                    TruckCraneMainArmLen,      -- 主臂长度
-                    TruckCraneRatedLiftingCap  -- 额定起重量
+                    SecondElevation,           -- 幅度（纵坐标）
+                    SecondMainArmLen,          -- 主臂长（表头）
+                    SecondTruckCraneRatedLiftingCap  -- 额定起重量
                 FROM TruckCraneLiftingCapacityData
                 WHERE TruckCraneID = ?
                 AND SecondSpeWorkCondition = ?
-                AND TruckCraneRatedLiftingCap IS NOT NULL
-                AND TruckCraneRatedLiftingCap != ''
-                ORDER BY CAST(TruckCraneRange AS FLOAT)
+                AND SecondTruckCraneRatedLiftingCap IS NOT NULL
+                AND SecondTruckCraneRatedLiftingCap != ''
+                ORDER BY CAST(SecondElevation AS FLOAT)
                 """
                 self.cursor.execute(query, (self.Str_crane_modelName, condition))
                 data = self.cursor.fetchall()
                 if data:
                     arm_lengths = sorted(set(str(row[1]) for row in data), key=lambda x: float(x) if x else 0)
-                    ranges = sorted(set(str(row[0]) for row in data), key=lambda x: float(x) if x else 0)
+                    elevations = sorted(set(str(row[0]) for row in data), key=lambda x: float(x) if x else 0)
                     capacity_table.setColumnCount(len(arm_lengths) + 1)
-                    headers = ["幅度/主臂长(m)"] + arm_lengths
+                    headers = ["幅度/仰角(m/°)"] + arm_lengths
                     capacity_table.setHorizontalHeaderLabels(headers)
-                    capacity_table.setRowCount(len(ranges))
+                    capacity_table.setRowCount(len(elevations))
                     capacity_dict = {}
                     for row in data:
                         capacity_dict[(str(row[0]), str(row[1]))] = str(row[2])
-                    for i, range_val in enumerate(ranges):
-                        capacity_table.setItem(i, 0, QTableWidgetItem(str(range_val)))
+                    for i, elevation in enumerate(elevations):
+                        capacity_table.setItem(i, 0, QTableWidgetItem(str(elevation)))
                         for j, arm_len in enumerate(arm_lengths):
-                            capacity = capacity_dict.get((range_val, arm_len), "")
+                            capacity = capacity_dict.get((elevation, arm_len), "")
                             if capacity:
                                 formatted_capacity = self.format_number(capacity)
                                 capacity_table.setItem(i, j + 1, QTableWidgetItem(formatted_capacity))
@@ -1075,7 +1075,7 @@ class CraneCapacityTab(QWidget):
                 else:
                     capacity_table.setRowCount(0)
                     capacity_table.setColumnCount(1)
-                    capacity_table.setHorizontalHeaderLabels(["幅度/主臂长(m)"])
+                    capacity_table.setHorizontalHeaderLabels(["幅度/仰角(m/°)"])
         except sqlite3.Error as e:
             QMessageBox.warning(self, "数据库错误", f"查询起重能力数据时发生错误: {str(e)}")
         except Exception as e:
