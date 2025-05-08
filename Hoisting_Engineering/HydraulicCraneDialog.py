@@ -1,16 +1,20 @@
 #液压汽车起重机吊装计算界面
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-    QRadioButton, QButtonGroup, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox, QFrame, QTabWidget
+    QRadioButton, QButtonGroup, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox, QFrame, QTabWidget, QSizePolicy
 )
 import sys
+import os
+if __name__ == "__main__":
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import uuid
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 from DataStruDef.EarthSlopeCalculation import VerificationProject
 from DataStruDef.HydraulicCraneData import HydraulicCraneData
-from .CraneRequirementsDialog import CraneRequirementsDialog
-from .CraneSelectionDialog import CraneSelectionDialog
-from .CraneParametersDialog import CraneParametersDialog
+from Hoisting_Engineering.CraneRequirementsDialog import CraneRequirementsDialog
+from Hoisting_Engineering.CraneSelectionDialog import CraneSelectionDialog
+from Hoisting_Engineering.CraneParametersDialog import CraneParametersDialog
 # para_uuid:
 # 类型：UUID 或 None
 # 作用：用于唯一标识对话框实例。如果没有提供，则在初始化时生成一个新的UUID。这在需要跟踪多个对话框实例时非常有用。
@@ -20,6 +24,45 @@ from .CraneParametersDialog import CraneParametersDialog
 # "load_capacity": 吊装能力，以吨为单位。
 # "boom_length": 吊臂长度，以米为单位。
 # "working_radius": 工作半径，以米为单位。#
+
+class ImageLabel(QLabel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._pixmap = None
+        self._base_size = None
+        self._scale = 1.0
+
+    def setPixmap(self, pixmap):
+        self._pixmap = pixmap
+        self._base_size = None
+        self._scale = 1.0
+        self.update_image()
+
+    def resizeEvent(self, event):
+        if self._pixmap and not self._pixmap.isNull():
+            self._base_size = self.size()
+            self._scale = 1.0
+            self.update_image()
+        super().resizeEvent(event)
+
+    def wheelEvent(self, event):
+        if self._pixmap is None or self._pixmap.isNull():
+            return
+        angle = event.angleDelta().y()
+        if angle > 0:
+            self._scale *= 1.1
+        else:
+            self._scale /= 1.1
+        self.update_image()
+
+    def update_image(self):
+        if self._pixmap and not self._pixmap.isNull():
+            if self._base_size is None:
+                self._base_size = self.size()
+            w = int(self._base_size.width() * self._scale)
+            h = int(self._base_size.height() * self._scale)
+            super().setPixmap(self._pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
 class HydraulicCraneDialog(QDialog):
     def __init__(self, uuid=None, data=None):
         super().__init__()
@@ -39,13 +82,26 @@ class HydraulicCraneDialog(QDialog):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("液压汽车起重机吊装计算")
-        self.setGeometry(100, 100, 800, 600)  # 设置对话框的初始大小
+        self.setGeometry(100, 100, 1100, 700)  # 设置对话框的初始大小
 
-        main_layout = QVBoxLayout()
+        # 主Splitter
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.setStyleSheet("""
+        QSplitter::handle {
+            background: #888;
+            width: 6px;
+            border-radius: 3px;
+        }
+        """)
 
+        # 左侧参数区
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
         # 1. 基本参数组
         basic_group = QGroupBox("基本参数")
         basic_layout = QGridLayout()
+        basic_layout.setContentsMargins(0, 0, 0, 0)
         
         # 吊重输入
         basic_layout.addWidget(QLabel("吊重Gw(吨):"), 0, 0)
@@ -90,10 +146,42 @@ class HydraulicCraneDialog(QDialog):
         self.selection_dialog.data_changed.connect(self.on_data_changed)
         self.parameters_dialog.data_changed.connect(self.on_data_changed)
         
-        # 添加所有组件到主布局
-        main_layout.addWidget(basic_group)
-        main_layout.addWidget(tab_widget)
-        
+        # 控件不拉伸
+        basic_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        tab_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        left_layout.addWidget(basic_group)
+        left_layout.addWidget(tab_widget)
+        left_layout.addStretch(1)  # 控件靠上
+        left_widget.setContentsMargins(0, 0, 0, 0)
+        left_widget.setMinimumWidth(30)  # 保证不会完全不可见
+        main_splitter.addWidget(left_widget)
+
+        # 右侧图片视图区
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        self.image_label = ImageLabel()
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setFrameShape(QFrame.Box)
+        self.image_label.setMinimumSize(400, 400)
+        # 加载图片
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        default_image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
+        if os.path.exists(default_image_path):
+            pixmap = QPixmap(default_image_path)
+            self.image_label.setPixmap(pixmap)
+        else:
+            self.image_label.setText("未找到图片")
+        right_layout.addWidget(self.image_label)
+        right_widget.setContentsMargins(0, 0, 0, 0)
+        right_widget.setMinimumWidth(30)  # 保证不会完全不可见
+        main_splitter.addWidget(right_widget)
+        main_splitter.setStretchFactor(0, 0)
+        main_splitter.setStretchFactor(1, 1)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(main_splitter)
         self.setLayout(main_layout)
 
     def on_data_changed(self):

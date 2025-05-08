@@ -2,6 +2,7 @@ import os
 import sys
 import win32com.client as win32
 import shutil
+import pythoncom
 
 def clear_com_cache():
     # 获取缓存目录
@@ -16,13 +17,15 @@ def clear_com_cache():
 class WordDocumentMerger:
 
     def __init__(self, root_directory, output_filename):#root_directory：文件夹路径 output_filename：输出的文件名
+        pythoncom.CoInitialize()
         self.root_directory = root_directory
         self.output_filename = os.path.join(root_directory, output_filename)
         
         # 清理COM缓存并初始化Word
         try:
             clear_com_cache()
-            self.word = win32.Dispatch('Word.Application')
+            self.word = win32.DispatchEx('Word.Application')
+            self.word.Visible = True
         except Exception as e:
             print(f"Error initializing Word: {e}")
             raise
@@ -278,6 +281,7 @@ class WordDocumentMerger:
 def main():
     root_directory = r"D:\Cache\ztzp-ConCaSys\WordTemplate"
     output_filename = "计算书.docx"
+    pythoncom.CoInitialize()
     merger = WordDocumentMerger(root_directory, output_filename)
     merger.Set_Main_Title("基坑计算书")
     merger.Type_Main_Title()
