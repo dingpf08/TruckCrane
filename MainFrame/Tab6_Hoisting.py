@@ -19,7 +19,7 @@ class Hoisting_CalculateTreeDialog(QDialog):
 
     #初始化起重吊装的各种计算界面
     def InitChildDialog(self):
-        self.hdc = HDC()  # 液压起重机吊装界面
+        # self.hdc = HDC()  # 不要在初始化时创建液压起重机吊装界面
         pass  # 这里后续会添加具体的计算界面类的实例化
 
     def initUI(self):

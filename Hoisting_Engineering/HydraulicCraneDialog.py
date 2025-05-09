@@ -81,10 +81,12 @@ class HydraulicCraneDialog(QDialog):
 
     def init_ui(self):
         """初始化用户界面"""
+        # 设置窗口标题和初始大小（放大一倍，便于显示更多内容）
         self.setWindowTitle("液压汽车起重机吊装计算")
-        self.setGeometry(100, 100, 1100, 700)  # 设置对话框的初始大小
+        self.setGeometry(100, 100, 3000, 1400)  # 设置对话框的初始大小（放大一倍）
 
-        # 主Splitter
+        # ===================== 主体布局结构 =====================
+        # 创建主Splitter，实现左右分栏布局
         main_splitter = QSplitter(Qt.Horizontal)
         main_splitter.setStyleSheet("""
         QSplitter::handle {
@@ -94,28 +96,25 @@ class HydraulicCraneDialog(QDialog):
         }
         """)
 
-        # 左侧参数区
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
+        # ========== 左侧参数区 ========== #
+        left_widget = QWidget()  # 左侧主容器
+        left_layout = QVBoxLayout(left_widget)  # 左侧垂直布局
         left_layout.setContentsMargins(0, 0, 0, 0)
         # 1. 基本参数组
-        basic_group = QGroupBox("基本参数")
-        basic_layout = QGridLayout()
+        basic_group = QGroupBox("基本参数")  # 基本参数分组框
+        basic_layout = QGridLayout()  # 网格布局
         basic_layout.setContentsMargins(0, 0, 0, 0)
-        
         # 吊重输入
         basic_layout.addWidget(QLabel("吊重Gw(吨):"), 0, 0)
-        self.crane_weight_edit = QLineEdit(str(self.data.crane_weight))
-        self.crane_weight_edit.textChanged.connect(self.on_data_changed)
+        self.crane_weight_edit = QLineEdit(str(self.data.crane_weight))  # 吊重输入框
+        self.crane_weight_edit.textChanged.connect(self.on_data_changed)  # 数据变更信号
         basic_layout.addWidget(self.crane_weight_edit, 0, 1)
-        
-        # 起重动力系数
+        # 起重动力系数输入
         basic_layout.addWidget(QLabel("起重动力系数k1:"), 1, 0)
-        self.power_factor_edit = QLineEdit(str(self.data.power_factor))
+        self.power_factor_edit = QLineEdit(str(self.data.power_factor))  # 动力系数输入框
         self.power_factor_edit.textChanged.connect(self.on_data_changed)
         basic_layout.addWidget(self.power_factor_edit, 1, 1)
-        
-        # 单选按钮组
+        # 单选按钮组（智能推荐/自定义）
         radio_group = QButtonGroup(self)
         self.smart_radio = QRadioButton("智能推荐起重机")
         self.custom_radio = QRadioButton("自定义起重机")
@@ -123,30 +122,24 @@ class HydraulicCraneDialog(QDialog):
         radio_group.addButton(self.custom_radio)
         self.smart_radio.setChecked(self.data.is_smart_recommendation)
         self.custom_radio.setChecked(not self.data.is_smart_recommendation)
-        
         basic_layout.addWidget(self.smart_radio, 2, 0)
         basic_layout.addWidget(self.custom_radio, 2, 1)
         basic_group.setLayout(basic_layout)
-        
-        # 2. 创建标签页组件
+        # 2. 创建标签页组件（吊装要求、起重机选型、相关参数）
         tab_widget = QTabWidget()
-        
         # 创建三个子对话框
-        self.requirements_dialog = CraneRequirementsDialog(self)
-        self.selection_dialog = CraneSelectionDialog(self)
-        self.parameters_dialog = CraneParametersDialog(self)
-        
+        self.requirements_dialog = CraneRequirementsDialog(self)  # 吊装要求
+        self.selection_dialog = CraneSelectionDialog(self)        # 起重机选型
+        self.parameters_dialog = CraneParametersDialog(self)      # 相关参数
         # 添加标签页
         tab_widget.addTab(self.requirements_dialog, "吊装要求")
         tab_widget.addTab(self.selection_dialog, "起重机选型")
         tab_widget.addTab(self.parameters_dialog, "起重机相关计算参数")
-        
         # 连接子对话框的数据改变信号
         self.requirements_dialog.data_changed.connect(self.on_data_changed)
         self.selection_dialog.data_changed.connect(self.on_data_changed)
         self.parameters_dialog.data_changed.connect(self.on_data_changed)
-        
-        # 控件不拉伸
+        # 控件不拉伸，靠上排列
         basic_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         tab_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         left_layout.addWidget(basic_group)
@@ -154,17 +147,17 @@ class HydraulicCraneDialog(QDialog):
         left_layout.addStretch(1)  # 控件靠上
         left_widget.setContentsMargins(0, 0, 0, 0)
         left_widget.setMinimumWidth(30)  # 保证不会完全不可见
-        main_splitter.addWidget(left_widget)
+        main_splitter.addWidget(left_widget)  # 左侧加入主分割器
 
-        # 右侧图片视图区
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
+        # ========== 右侧图片视图区 ========== #
+        right_widget = QWidget()  # 右侧主容器
+        right_layout = QVBoxLayout(right_widget)  # 右侧垂直布局
         right_layout.setContentsMargins(0, 0, 0, 0)
-        self.image_label = ImageLabel()
+        self.image_label = ImageLabel()  # 图片显示控件
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setFrameShape(QFrame.Box)
-        self.image_label.setMinimumSize(400, 400)
-        # 加载图片
+        # self.image_label.setMinimumSize(800, 800)  # 注释掉或改为较小值
+        # 加载起重机示意图
         current_dir = os.path.dirname(os.path.abspath(__file__))
         default_image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
         if os.path.exists(default_image_path):
@@ -175,14 +168,19 @@ class HydraulicCraneDialog(QDialog):
         right_layout.addWidget(self.image_label)
         right_widget.setContentsMargins(0, 0, 0, 0)
         right_widget.setMinimumWidth(30)  # 保证不会完全不可见
-        main_splitter.addWidget(right_widget)
-        main_splitter.setStretchFactor(0, 0)
-        main_splitter.setStretchFactor(1, 1)
+        main_splitter.addWidget(right_widget)  # 右侧加入主分割器
 
+        # ========== 分割器比例与主布局 ========== #
+        main_splitter.setStretchFactor(0, 0)  # 左侧不拉伸
+        main_splitter.setStretchFactor(1, 1)  # 右侧可拉伸
+        main_splitter.setSizes([4, 6])  # 按比例分配宽度，右侧更宽
+
+        # ========== 总体主布局 ========== #
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(main_splitter)
-        self.setLayout(main_layout)
+        self.setLayout(main_layout)  # 应用主布局
+        # self.showMaximized()  # 移除自动最大化，避免界面异常放大
 
     def on_data_changed(self):
         """当数据改变时的处理函数"""
@@ -224,8 +222,9 @@ class HydraulicCraneDialog(QDialog):
         """获取对话框的UUID"""
         return self.uuid
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    crane_dialog = HydraulicCraneDialog()
-    crane_dialog.show()
-    sys.exit(app.exec_()) 
+# 移除或注释掉以下内容，防止自动启动界面
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     crane_dialog = HydraulicCraneDialog()
+#     crane_dialog.show()
+#     sys.exit(app.exec_()) 
