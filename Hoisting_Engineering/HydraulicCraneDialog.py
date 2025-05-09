@@ -8,8 +8,8 @@ import os
 if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import uuid
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QPixmap, QPainter
 from DataStruDef.EarthSlopeCalculation import VerificationProject
 from DataStruDef.HydraulicCraneData import HydraulicCraneData
 from Hoisting_Engineering.CraneRequirementsDialog import CraneRequirementsDialog
@@ -29,20 +29,20 @@ class ImageLabel(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._pixmap = None
-        self._base_size = None
         self._scale = 1.0
+        self._offset = QPoint(0, 0)
+        self._dragging = False
+        self._last_pos = None
 
     def setPixmap(self, pixmap):
         self._pixmap = pixmap
-        self._base_size = None
         self._scale = 1.0
+        self._offset = QPoint(0, 0)
         self.update_image()
 
     def resizeEvent(self, event):
-        if self._pixmap and not self._pixmap.isNull():
-            self._base_size = self.size()
-            self._scale = 1.0
-            self.update_image()
+        self._offset = QPoint(0, 0)
+        self.update_image()
         super().resizeEvent(event)
 
     def wheelEvent(self, event):
@@ -53,15 +53,46 @@ class ImageLabel(QLabel):
             self._scale *= 1.1
         else:
             self._scale /= 1.1
+        self._scale = max(0.1, min(self._scale, 10))
+        self._offset = QPoint(0, 0)  # 缩放时重置偏移，始终居中
         self.update_image()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._dragging = True
+            self._last_pos = event.pos()
+            self.setCursor(Qt.ClosedHandCursor)
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._dragging and self._pixmap and not self._pixmap.isNull():
+            delta = event.pos() - self._last_pos
+            self._offset += delta
+            self._last_pos = event.pos()
+            self.update_image()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._dragging = False
+            self.setCursor(Qt.ArrowCursor)
+        super().mouseReleaseEvent(event)
 
     def update_image(self):
         if self._pixmap and not self._pixmap.isNull():
-            if self._base_size is None:
-                self._base_size = self.size()
-            w = int(self._base_size.width() * self._scale)
-            h = int(self._base_size.height() * self._scale)
-            super().setPixmap(self._pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            w = int(self._pixmap.width() * self._scale)
+            h = int(self._pixmap.height() * self._scale)
+            scaled_pixmap = self._pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            result = QPixmap(self.size())
+            result.fill(Qt.transparent)
+            painter = QPainter(result)
+            x = (self.width() - scaled_pixmap.width()) // 2 + self._offset.x()
+            y = (self.height() - scaled_pixmap.height()) // 2 + self._offset.y()
+            painter.drawPixmap(x, y, scaled_pixmap)
+            painter.end()
+            super().setPixmap(result)
+        else:
+            super().setPixmap(QPixmap())
 
 class HydraulicCraneDialog(QDialog):
     def __init__(self, uuid=None, data=None):
@@ -76,6 +107,9 @@ class HydraulicCraneDialog(QDialog):
         self.IsSave = True  # 保存状态标志
         # Add verification project initialization
         self.verification_project = VerificationProject("液压汽车起重机吊装计算")#后续支持修改项目树节点的名称，目前还没有用到
+
+        self.setMinimumSize(800, 600)
+        self.setMaximumSize(1920, 1080)
 
         self.init_ui()
 
@@ -139,13 +173,9 @@ class HydraulicCraneDialog(QDialog):
         self.requirements_dialog.data_changed.connect(self.on_data_changed)
         self.selection_dialog.data_changed.connect(self.on_data_changed)
         self.parameters_dialog.data_changed.connect(self.on_data_changed)
-        # 控件不拉伸，靠上排列
-        basic_group.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        tab_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         left_layout.addWidget(basic_group)
         left_layout.addWidget(tab_widget)
         left_layout.addStretch(1)  # 控件靠上
-        left_widget.setContentsMargins(0, 0, 0, 0)
         left_widget.setMinimumWidth(200)  # 左侧最小宽度，允许拖动
         main_splitter.addWidget(left_widget)  # 左侧加入主分割器
 
@@ -153,18 +183,19 @@ class HydraulicCraneDialog(QDialog):
         right_widget = QWidget()  # 右侧主容器
         right_layout = QVBoxLayout(right_widget)  # 右侧垂直布局
         right_layout.setContentsMargins(0, 0, 0, 0)
+        # 添加顶部Tab用于切换图片
+        self.image_tab = QTabWidget()
+        self.image_tab.addTab(QWidget(), "吊装工况图")
+        self.image_tab.addTab(QWidget(), "支腿力计算简图")
+        self.image_tab.setFixedHeight(30)  # 只显示tab按钮，不显示内容
+        self.image_tab.currentChanged.connect(self.on_image_tab_changed)
+        right_layout.addWidget(self.image_tab)  # Tab按钮放在右侧顶部
         self.image_label = ImageLabel()  # 图片显示控件
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setFrameShape(QFrame.Box)
         # self.image_label.setMinimumSize(200, 200)  # 可选：设置图片最小尺寸
-        # 加载起重机示意图
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        default_image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
-        if os.path.exists(default_image_path):
-            pixmap = QPixmap(default_image_path)
-            self.image_label.setPixmap(pixmap)
-        else:
-            self.image_label.setText("未找到图片")
+        # 默认显示吊装工况图
+        self.show_image_by_tab(0)
         right_layout.addWidget(self.image_label)
         right_widget.setContentsMargins(0, 0, 0, 0)
         right_widget.setMinimumWidth(200)  # 右侧最小宽度
@@ -221,6 +252,21 @@ class HydraulicCraneDialog(QDialog):
     def Getuuid(self):
         """获取对话框的UUID"""
         return self.uuid
+
+    def on_image_tab_changed(self, index):
+        self.show_image_by_tab(index)
+
+    def show_image_by_tab(self, index):
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if index == 0:
+            image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
+        else:
+            image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "OutForceCalDiagram.png")
+        if os.path.exists(image_path):
+            self.image_label._offset = QPoint(0, 0)  # 切换图片时重置偏移
+            self.image_label.setPixmap(QPixmap(image_path))
+        else:
+            self.image_label.setText("未找到图片")
 
 # 移除或注释掉以下内容，防止自动启动界面
 # if __name__ == '__main__':
