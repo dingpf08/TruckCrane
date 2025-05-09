@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
 #测试案例
     def initUI(self):
         self.setWindowTitle('施工计算软件')
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100,1500, 800)
         self.m_CalDock=CalculateDockWidget("工程树图")
         self.m_menu=ECSMenuBar(self)# 1、水平顶部设置菜单栏
         self.m_toolbar=ToolBar(self) # 2、水平中间添加工具栏

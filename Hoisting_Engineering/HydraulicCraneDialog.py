@@ -81,9 +81,9 @@ class HydraulicCraneDialog(QDialog):
 
     def init_ui(self):
         """初始化用户界面"""
-        # 设置窗口标题和初始大小（放大一倍，便于显示更多内容）
+        # 设置窗口标题和初始大小，适配主窗口宽度
         self.setWindowTitle("液压汽车起重机吊装计算")
-        self.setGeometry(100, 100, 3000, 1400)  # 设置对话框的初始大小（放大一倍）
+        self.setGeometry(100, 100, 1500, 800)  # 与主窗口宽度一致
 
         # ===================== 主体布局结构 =====================
         # 创建主Splitter，实现左右分栏布局
@@ -146,7 +146,7 @@ class HydraulicCraneDialog(QDialog):
         left_layout.addWidget(tab_widget)
         left_layout.addStretch(1)  # 控件靠上
         left_widget.setContentsMargins(0, 0, 0, 0)
-        left_widget.setMinimumWidth(30)  # 保证不会完全不可见
+        left_widget.setMinimumWidth(200)  # 左侧最小宽度，允许拖动
         main_splitter.addWidget(left_widget)  # 左侧加入主分割器
 
         # ========== 右侧图片视图区 ========== #
@@ -156,7 +156,7 @@ class HydraulicCraneDialog(QDialog):
         self.image_label = ImageLabel()  # 图片显示控件
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setFrameShape(QFrame.Box)
-        # self.image_label.setMinimumSize(800, 800)  # 注释掉或改为较小值
+        # self.image_label.setMinimumSize(200, 200)  # 可选：设置图片最小尺寸
         # 加载起重机示意图
         current_dir = os.path.dirname(os.path.abspath(__file__))
         default_image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
@@ -167,13 +167,13 @@ class HydraulicCraneDialog(QDialog):
             self.image_label.setText("未找到图片")
         right_layout.addWidget(self.image_label)
         right_widget.setContentsMargins(0, 0, 0, 0)
-        right_widget.setMinimumWidth(30)  # 保证不会完全不可见
+        right_widget.setMinimumWidth(200)  # 右侧最小宽度
         main_splitter.addWidget(right_widget)  # 右侧加入主分割器
 
         # ========== 分割器比例与主布局 ========== #
         main_splitter.setStretchFactor(0, 0)  # 左侧不拉伸
         main_splitter.setStretchFactor(1, 1)  # 右侧可拉伸
-        main_splitter.setSizes([4, 6])  # 按比例分配宽度，右侧更宽
+        main_splitter.setSizes([400, 1100])  # 初始左400，右1100，允许拖动
 
         # ========== 总体主布局 ========== #
         main_layout = QVBoxLayout(self)
