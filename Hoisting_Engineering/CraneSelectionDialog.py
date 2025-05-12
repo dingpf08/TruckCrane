@@ -1,3 +1,4 @@
+"""起重机选型子对话框"""
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QComboBox, QGridLayout, QGroupBox,
                              QPushButton, QTableWidget, QTableWidgetItem, QCheckBox)
