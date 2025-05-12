@@ -113,7 +113,7 @@ class CraneParametersDialog(QWidget):
         self.soil_strength_edit = QLineEdit("360")
         fak_row.addWidget(self.soil_strength_edit)
         # 新增：圆形红框按钮
-        self.fak_btn = QPushButton("...")
+        self.fak_btn = QPushButton("🐎")
         self.fak_btn.setFixedSize(24, 24)
         self.fak_btn.setStyleSheet("border: 2px solid red; border-radius: 12px; color: red; font-weight: bold; background: white;")
         fak_row.addWidget(self.fak_btn)
