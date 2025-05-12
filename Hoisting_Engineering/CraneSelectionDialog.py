@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QComboBox, QGridLayout, QGroupBox,
                              QPushButton, QTableWidget, QTableWidgetItem, QCheckBox)
 from PyQt5.QtCore import Qt, pyqtSignal
+from CommonDialogs.CraneSettingsDialog import CraneSettingsDialog
 
 class CraneSelectionDialog(QWidget):
     """起重机选型子对话框"""
@@ -10,6 +11,9 @@ class CraneSelectionDialog(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_ui()
+        
+        # 连接厂家按钮点击事件
+        self.manufacturer_button.clicked.connect(self.show_crane_settings_dialog)
         
     def init_ui(self):
         layout = QVBoxLayout()
@@ -182,4 +186,9 @@ class CraneSelectionDialog(QWidget):
         self.crane_model_combo.setCurrentText(data.get('Str_crane_modelName', 'STC500'))
         self.capacity_check.setChecked(data.get('capacity_check', True))
         self.boom_combo.setCurrentText(data.get('boom_type', '主臂'))
-        self.condition_detail_combo.setCurrentText(data.get('condition_detail', '固定配重30t，支腿全伸，需要二节臂时满伸')) 
+        self.condition_detail_combo.setCurrentText(data.get('condition_detail', '固定配重30t，支腿全伸，需要二节臂时满伸'))
+
+    def show_crane_settings_dialog(self):
+        """弹出起重机械设置对话框（模态）"""
+        dialog = CraneSettingsDialog(self)
+        dialog.exec_() 
