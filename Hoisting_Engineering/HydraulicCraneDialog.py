@@ -203,6 +203,18 @@ class HydraulicCraneDialog(QDialog):
             border-radius: 3px;
         }
         """)
+        # 设置TabWidget分界线样式
+        tab_bar_style = """
+        QTabBar::tab {
+            border-right: 2px solid #a0a0a0;
+            padding: 4px 12px 4px 12px;
+            font-family: 'SimHei', '黑体', 'Microsoft YaHei', Arial, sans-serif;
+            font-weight: bold;
+        }
+        QTabBar::tab:last {
+            border-right: none;
+        }
+        """
 
         # ========== 左侧参数区 ========== #
         left_widget = QWidget()  # 左侧主容器
@@ -235,6 +247,7 @@ class HydraulicCraneDialog(QDialog):
         basic_group.setLayout(basic_layout)
         # 2. 创建标签页组件（吊装要求、起重机选型、相关参数）
         tab_widget = QTabWidget()
+        tab_widget.setStyleSheet(tab_bar_style)
         # 创建三个子对话框
         self.requirements_dialog = CraneRequirementsDialog(self)  # 吊装要求子对话框
         self.selection_dialog = CraneSelectionDialog(self)        # 起重机选型子对话框

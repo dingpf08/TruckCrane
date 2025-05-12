@@ -68,6 +68,9 @@ class CraneRequirementsDialog(QWidget):
         
         self.setLayout(layout)
         
+        # 设置所有QGroupBox标题为黑体
+        self.setStyleSheet("QGroupBox { font-family: 'SimHei', '黑体', 'Microsoft YaHei', Arial, sans-serif; font-weight: bold; }")
+        
     def on_data_changed(self):
         """数据改变时发出信号"""
         self.data_changed.emit()
