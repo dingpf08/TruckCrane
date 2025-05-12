@@ -66,7 +66,7 @@ class ToolBar(QToolBar):
     def show_crane_settings(self):
         """显示起重机械设置对话框"""
         try:
-            from Dialogs.CraneSettingsDialog import CraneSettingsDialog
+            from CommonDialogs.CraneSettingsDialog import CraneSettingsDialog
             dialog = CraneSettingsDialog(self)
             dialog.exec_()
         except Exception as e:

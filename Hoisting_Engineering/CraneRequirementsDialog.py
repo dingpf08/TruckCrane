@@ -46,12 +46,12 @@ class CraneRequirementsDialog(QWidget):
         safety_layout = QGridLayout()
         
         # 构件边缘距起重臂距离
-        safety_layout.addWidget(QLabel("构件边缘距起重臂距离(m):"), 0, 0)
+        safety_layout.addWidget(QLabel("构件边缘距起重臂距离b(m):"), 0, 0)
         self.edge_distance_edit = QLineEdit("1")
         safety_layout.addWidget(self.edge_distance_edit, 0, 1)
         
         # 安装构件边缘距起重臂中心的最小安全距离
-        safety_layout.addWidget(QLabel("安装构件边缘距起重臂中心的最小安全距离ε(m):"), 1, 0)
+        safety_layout.addWidget(QLabel("安装构件边缘距起重臂中心的最小安全距离f(m):"), 1, 0)
         self.safety_distance_edit = QLineEdit("1")
         safety_layout.addWidget(self.safety_distance_edit, 1, 1)
         

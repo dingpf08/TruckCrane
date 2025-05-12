@@ -51,7 +51,7 @@ import sqlite3
 
 #主臂起重性能表
 # 获取当前文件所在目录的路径
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))#D:\Cache\ztzp-ConCaSys\Dialogs
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))#D:\Cache\ztzp-ConCaSys\CommonDialogs
 # 获取项目根目录的路径
 ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))#D:\Cache\ztzp-ConCaSys
 

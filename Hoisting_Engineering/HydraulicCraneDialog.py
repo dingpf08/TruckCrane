@@ -367,10 +367,3 @@ class HydraulicCraneDialog(QDialog):
             self.image_label.setPixmap(QPixmap(image_path))
         else:
             self.image_label.setText("未找到图片")
-
-# 移除或注释掉以下内容，防止自动启动界面
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     crane_dialog = HydraulicCraneDialog()
-#     crane_dialog.show()
-#     sys.exit(app.exec_()) 
