@@ -1,7 +1,8 @@
 """起重机选型子对话框"""
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QComboBox, QGridLayout, QGroupBox,
-                             QPushButton, QTableWidget, QTableWidgetItem, QCheckBox)
+                             QPushButton, QTableWidget, QTableWidgetItem, QCheckBox,
+                             QTabWidget, QFormLayout)
 from PyQt5.QtCore import Qt, pyqtSignal
 from CommonDialogs.CraneSettingsDialog import CraneSettingsDialog
 
@@ -91,23 +92,41 @@ class CraneSelectionDialog(QWidget):
         condition_group.setLayout(condition_layout)
         selection_layout.addWidget(condition_group, 5, 0, 3, 3)
         
-        # 创建推荐参数（幅度、臂长、额定起重量）组
-        parameters_group = QGroupBox("推荐参数（幅度、臂长、额定起重量）")
-        parameters_layout = QGridLayout()
-        
-        # 添加表格
-        self.table = QTableWidget()
-        self.init_table()
-        parameters_layout.addWidget(self.table, 0, 0)
-        
-        parameters_group.setLayout(parameters_layout)
-        selection_layout.addWidget(parameters_group, 8, 0, 4, 3)
-        
+        # 创建推荐参数TabWidget
+        self.recommend_tab = QTabWidget()
+        # 推荐参数（吊装工况）Tab
+        self.tab_condition = QWidget()
+        tab_condition_layout = QVBoxLayout(self.tab_condition)
+        tab_condition_layout.addWidget(condition_group)
+        self.recommend_tab.addTab(self.tab_condition, "推荐参数（吊装工况）")
+        # 推荐参数（幅度、臂长、额定起重量）Tab
+        self.tab_parameters = QWidget()
+        tab_parameters_layout = QFormLayout(self.tab_parameters)
+        # 主臂铰链中心至地面距离
+        self.edit_hinge_to_ground = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("主臂铰链中心至地面距离h1(m):"), self.edit_hinge_to_ground)
+        # 主臂铰链中心至回转中心距离
+        self.edit_hinge_to_rotation = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("主臂铰链中心至回转中心a1(m):"), self.edit_hinge_to_rotation)
+        # 设计主臂长
+        self.edit_boom_length = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("设计主臂长L1(m):[范围6~37]"), self.edit_boom_length)
+        # 幅度
+        self.edit_radius = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("幅度R(m):[范围3~26]"), self.edit_radius)
+        # 主臂仰角
+        self.edit_boom_angle = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("主臂仰角(°):[范围7~76]"), self.edit_boom_angle)
+        # 额定起重量
+        self.edit_rated_weight = QLineEdit()
+        tab_parameters_layout.addRow(QLabel("额定起重量(qt):"), self.edit_rated_weight)
+        self.recommend_tab.addTab(self.tab_parameters, "推荐参数（幅度、臂长、额定起重量）")
         # 添加所有控件到主布局
         main_group = QGroupBox()
-        main_group.setLayout(selection_layout)
+        main_layout = QVBoxLayout(main_group)
+        main_layout.addLayout(selection_layout)
+        main_layout.addWidget(self.recommend_tab)
         layout.addWidget(main_group)
-        
         self.setLayout(layout)
         
         # 连接信号
