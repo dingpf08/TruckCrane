@@ -33,9 +33,12 @@ class CraneSelectionDialog(QWidget):
         
         # 汽车起重机厂家
         selection_layout.addWidget(QLabel("汽车起重机厂家:"), 1, 0)
+        self.manufacturer_button = QPushButton("...")
+        self.manufacturer_button.setStyleSheet("font-weight: bold; color: white; background-color: #0078d7; border-radius: 4px; min-width: 28px; max-width: 28px; min-height: 24px;")
+        selection_layout.addWidget(self.manufacturer_button, 1, 1)
         self.manufacturer_combo = QComboBox()
         self.manufacturer_combo.addItems(["三一", "中联重科", "徐工"])
-        selection_layout.addWidget(self.manufacturer_combo, 1, 1, 1, 2)
+        selection_layout.addWidget(self.manufacturer_combo, 1, 2)
         
         # 创建推荐参数（起重机型号）组
         model_group = QGroupBox("推荐参数（起重机型号）")
