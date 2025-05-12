@@ -14,106 +14,100 @@ class CraneParametersDialog(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
         
-        # 起重机自重荷载
-        weight_group = QGroupBox("起重机自重荷载")
-        weight_layout = QGridLayout()
-        
-        # 起重机自重荷载选择
-        weight_layout.addWidget(QLabel("起重机自重荷载:"), 0, 0)
+        # 起重机自重荷载选择（不在group内）
+        weight_layout = QHBoxLayout()
+        weight_layout.addWidget(QLabel("起重机自重荷载:"))
         self.weight_combo = QComboBox()
         self.weight_combo.addItem("按说明书轴荷")
-        weight_layout.addWidget(self.weight_combo, 0, 1)
-        
-        weight_group.setLayout(weight_layout)
-        layout.addWidget(weight_group)
-        
-        # 起重机轴距及轴荷
-        axle_group = QGroupBox("起重机轴距及轴荷")
+        weight_layout.addWidget(self.weight_combo)
+        weight_layout.addStretch(1)
+        layout.addLayout(weight_layout)
+        # 起重机轴距及轴荷分组
+        main_group = QGroupBox("起重机轴距及轴荷")
+        main_group.setStyleSheet("QGroupBox { font-weight: bold; font-size: 10pt; }")
+        main_layout = QVBoxLayout(main_group)
+        # 轴数、第一排车轮荷载
         axle_layout = QGridLayout()
-        
-        # 汽车起重机轴数
         axle_layout.addWidget(QLabel("汽车起重机轴数:"), 0, 0)
         self.axle_count_edit = QLineEdit("4")
         axle_layout.addWidget(self.axle_count_edit, 0, 1)
-        
-        # 第1排车轮荷载
         axle_layout.addWidget(QLabel("第1排车轮荷载(吨):"), 1, 0)
         self.first_axle_load_edit = QLineEdit("8")
         axle_layout.addWidget(self.first_axle_load_edit, 1, 1)
-        
-        # 创建轴距表格
+        main_layout.addLayout(axle_layout)
+        # 轴距表格
         self.axle_table = QTableWidget()
         self.init_axle_table()
-        axle_layout.addWidget(self.axle_table, 2, 0, 1, 2)
+        main_layout.addWidget(self.axle_table)
+        # 后支腿距后后排车轮距离
+        rear_leg_layout = QHBoxLayout()
+        rear_leg_layout.addWidget(QLabel("后支腿距后后排车轮距离s1(m):"))
+        self.rear_leg_distance_edit = QLineEdit("1.5")
+        rear_leg_layout.addWidget(self.rear_leg_distance_edit)
+        main_layout.addLayout(rear_leg_layout)
+        layout.addWidget(main_group)
         
-        axle_group.setLayout(axle_layout)
-        layout.addWidget(axle_group)
-        
-        # 其他参数
-        params_group = QGroupBox("其他参数")
+        # 其它参数
+        params_group = QGroupBox("其它参数")
+        params_group.setStyleSheet("QGroupBox { font-weight: bold; font-size: 10pt; }")
         params_layout = QGridLayout()
         
-        # 后支腿距后后排车轮距离
-        params_layout.addWidget(QLabel("后支腿距后后排车轮距离s1(m):"), 0, 0)
-        self.rear_leg_distance_edit = QLineEdit("1.5")
-        params_layout.addWidget(self.rear_leg_distance_edit, 0, 1)
-        
         # 汽车起重机自重
-        params_layout.addWidget(QLabel("汽车起重机自重(吨):"), 1, 0)
+        params_layout.addWidget(QLabel("汽车起重机自重(吨):"), 0, 0)
         self.crane_weight_edit = QLineEdit("42")
-        params_layout.addWidget(self.crane_weight_edit, 1, 1)
+        params_layout.addWidget(self.crane_weight_edit, 0, 1)
         
         # 是否有活动配重
-        params_layout.addWidget(QLabel("是否有活动配重:"), 2, 0)
+        params_layout.addWidget(QLabel("是否有活动配重:"), 1, 0)
         self.has_active_weight_combo = QComboBox()
         self.has_active_weight_combo.addItem("是")
-        params_layout.addWidget(self.has_active_weight_combo, 2, 1)
+        params_layout.addWidget(self.has_active_weight_combo, 1, 1)
         
         # 活动配重重量
-        params_layout.addWidget(QLabel("活动配重重量(吨):"), 3, 0)
+        params_layout.addWidget(QLabel("活动配重重量(吨):"), 2, 0)
         self.active_weight_edit = QLineEdit("30")
-        params_layout.addWidget(self.active_weight_edit, 3, 1)
+        params_layout.addWidget(self.active_weight_edit, 2, 1)
         
         # 活动配重距转中心距离
-        params_layout.addWidget(QLabel("活动配重距转中心距离Ld(m):"), 4, 0)
+        params_layout.addWidget(QLabel("活动配重距转中心距离Ld(m):"), 3, 0)
         self.active_weight_distance_edit = QLineEdit("2.175")
-        params_layout.addWidget(self.active_weight_distance_edit, 4, 1)
+        params_layout.addWidget(self.active_weight_distance_edit, 3, 1)
         
         # 支腿纵向距离
-        params_layout.addWidget(QLabel("支腿纵向距离s2(m):"), 5, 0)
+        params_layout.addWidget(QLabel("支腿纵向距离s2(m):"), 4, 0)
         self.leg_length_edit = QLineEdit("6")
-        params_layout.addWidget(self.leg_length_edit, 5, 1)
+        params_layout.addWidget(self.leg_length_edit, 4, 1)
         
         # 支腿横向距离
-        params_layout.addWidget(QLabel("支腿横向距离s3(m):"), 6, 0)
+        params_layout.addWidget(QLabel("支腿横向距离s3(m):"), 5, 0)
         self.leg_width_edit = QLineEdit("7.2")
-        params_layout.addWidget(self.leg_width_edit, 6, 1)
+        params_layout.addWidget(self.leg_width_edit, 5, 1)
         
         # 后支腿距转中心距离
-        params_layout.addWidget(QLabel("后支腿距转中心距离Lh(m):"), 7, 0)
+        params_layout.addWidget(QLabel("后支腿距转中心距离Lh(m):"), 6, 0)
         self.rear_leg_center_edit = QLineEdit("2.175")
-        params_layout.addWidget(self.rear_leg_center_edit, 7, 1)
+        params_layout.addWidget(self.rear_leg_center_edit, 6, 1)
         
         # 抗倾覆安全系数
-        params_layout.addWidget(QLabel("抗倾覆安全系数:"), 8, 0)
+        params_layout.addWidget(QLabel("抗倾覆安全系数:"), 7, 0)
         self.safety_factor_edit = QLineEdit("1.2")
-        params_layout.addWidget(self.safety_factor_edit, 8, 1)
+        params_layout.addWidget(self.safety_factor_edit, 7, 1)
         
         # 地基承载力计算
-        params_layout.addWidget(QLabel("单根支腿基础面积Ad1(m2):"), 9, 0)
+        params_layout.addWidget(QLabel("单根支腿基础面积Ad1(m2):"), 8, 0)
         self.foundation_area_edit = QLineEdit("10")
-        params_layout.addWidget(self.foundation_area_edit, 9, 1)
+        params_layout.addWidget(self.foundation_area_edit, 8, 1)
         
         # 地基土类型
-        params_layout.addWidget(QLabel("地基土类型:"), 10, 0)
+        params_layout.addWidget(QLabel("地基土类型:"), 9, 0)
         self.soil_type_combo = QComboBox()
         self.soil_type_combo.addItem("碎石土")
-        params_layout.addWidget(self.soil_type_combo, 10, 1)
+        params_layout.addWidget(self.soil_type_combo, 9, 1)
         
         # 地基承载力特征值
-        params_layout.addWidget(QLabel("地基承载力特征值fak(kPa):"), 11, 0)
+        params_layout.addWidget(QLabel("地基承载力特征值fak(kPa):"), 10, 0)
         self.soil_strength_edit = QLineEdit("360")
-        params_layout.addWidget(self.soil_strength_edit, 11, 1)
+        params_layout.addWidget(self.soil_strength_edit, 10, 1)
         
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)

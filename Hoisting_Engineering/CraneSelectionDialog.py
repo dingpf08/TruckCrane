@@ -64,62 +64,87 @@ class CraneSelectionDialog(QWidget):
         self.capacity_check.setChecked(True)
         selection_layout.addWidget(self.capacity_check, 4, 0, 1, 3)
         
-        # 创建推荐参数（吊装工况）组
-        condition_group = QGroupBox("推荐参数（吊装工况）")
-        condition_layout = QGridLayout()
-        
-        # 起重臂
-        condition_layout.addWidget(QLabel("起重臂:"), 0, 0)
-        self.boom_combo = QComboBox()
-        self.boom_combo.addItem("主臂")
-        condition_layout.addWidget(self.boom_combo, 0, 1)
-        
-        # 具体吊装工况
-        condition_layout.addWidget(QLabel("具体吊装工况:"), 1, 0)
-        self.condition_detail_combo = QComboBox()
-        self.condition_detail_combo.addItems([
-            "固定配重30t，支腿全伸，需要二节臂时满伸",
-            "固定配重30t，支腿全伸，需要二节臂时不满伸",
-            "固定配重30t+活动配重20t，支腿全伸，需要二节臂时满伸",
-            "固定配重30t+活动配重20t，支腿全伸，需要二节臂时不满伸"
-        ])
-        condition_layout.addWidget(self.condition_detail_combo, 1, 1)
-        
-        # 添加吊装工况表格按钮
-        self.condition_table_button = QPushButton("显示工况表格")
-        condition_layout.addWidget(self.condition_table_button, 2, 0, 1, 2)
-        
-        condition_group.setLayout(condition_layout)
-        selection_layout.addWidget(condition_group, 5, 0, 3, 3)
-        
         # 创建推荐参数TabWidget
         self.recommend_tab = QTabWidget()
         # 推荐参数（吊装工况）Tab
         self.tab_condition = QWidget()
         tab_condition_layout = QVBoxLayout(self.tab_condition)
-        tab_condition_layout.addWidget(condition_group)
+        # 新增：上方控件区（两排，左对齐，纵向对齐）
+        condition_top_layout = QFormLayout()
+        self.boom_combo = QComboBox()
+        self.boom_combo.addItem("主臂")
+        condition_top_layout.addRow(QLabel("起重臂:"), self.boom_combo)
+        self.condition_detail_combo = QComboBox()
+        self.condition_detail_combo.addItems(["配重1.2t，支腿全"])
+        condition_top_layout.addRow(QLabel("具体吊装工况:"), self.condition_detail_combo)
+        tab_condition_layout.addLayout(condition_top_layout)
+        # 创建表格
+        self.condition_table = QTableWidget()
+        self.condition_table.setColumnCount(6)
+        self.condition_table.setRowCount(17)
+        headers = ["幅度/主臂长(m)", "9.6", "15.08", "20.56", "26.04", "31.52"]
+        self.condition_table.setHorizontalHeaderLabels(headers)
+        radius_values = [str(x) for x in [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8, 9, 10, 11, 12, 16, 18, 20, 22, 24, 26]]
+        for i, value in enumerate([str(x) for x in [3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8, 9, 10, 11, 12, 16, 18, 20, 22, 24, 26]][:17]):
+            self.condition_table.setItem(i, 0, QTableWidgetItem(value))
+        table_data = [
+            ["12", "10.8", "", "", ""],
+            ["12", "10.8", "8.7", "", ""],
+            ["12", "10.6", "8.7", "", ""],
+            ["11.8", "10.4", "8.7", "6.8", ""],
+            ["11", "9.7", "8.2", "6.8", ""],
+            ["9.9", "9", "7.9", "6.7", ""],
+            ["9.1", "8.5", "7.6", "6.2", "4.8"],
+            ["8.4", "7.7", "7.35", "5.9", "4.8"],
+            ["7.8", "7.1", "6.95", "5.4", "4.1"],
+            ["6.2", "5.95", "4.8", "4.1", ""],
+            ["5.2", "5.3", "4.35", "3.8", ""],
+            ["3.6", "3.9", "3.6", "3.2", ""],
+            ["3", "3.3", "2.9", "2.95", ""],
+            ["2.2", "2.2", "2.1", "2", ""],
+            ["1.8", "1.7", "1.6", "", ""],
+            ["1.4", "1.2", "1.3", "", ""],
+            ["0.8", "0.85", "", "", ""],
+            ["0.65", "", "", "", ""],
+            ["", "", "", "", ""]
+        ]
+        for i, row in enumerate(table_data):
+            for j, value in enumerate(row):
+                if value:
+                    self.condition_table.setItem(i, j + 1, QTableWidgetItem(value))
+        tab_condition_layout.addWidget(self.condition_table)
         self.recommend_tab.addTab(self.tab_condition, "推荐参数（吊装工况）")
         # 推荐参数（幅度、臂长、额定起重量）Tab
         self.tab_parameters = QWidget()
-        tab_parameters_layout = QFormLayout(self.tab_parameters)
+        tab_parameters_layout = QVBoxLayout(self.tab_parameters)
         # 主臂铰链中心至地面距离
         self.edit_hinge_to_ground = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("主臂铰链中心至地面距离h1(m):"), self.edit_hinge_to_ground)
+        row_hinge_to_ground = QHBoxLayout()
+        row_hinge_to_ground.addWidget(QLabel("主臂铰链中心至地面距离h1(m):"))
+        row_hinge_to_ground.addWidget(self.edit_hinge_to_ground)
+        tab_parameters_layout.addLayout(row_hinge_to_ground)
         # 主臂铰链中心至回转中心距离
         self.edit_hinge_to_rotation = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("主臂铰链中心至回转中心a1(m):"), self.edit_hinge_to_rotation)
+        row_hinge_to_rotation = QHBoxLayout()
+        row_hinge_to_rotation.addWidget(QLabel("主臂铰链中心至回转中心a1(m):"))
+        row_hinge_to_rotation.addWidget(self.edit_hinge_to_rotation)
+        tab_parameters_layout.addLayout(row_hinge_to_rotation)
+        # 推荐参数分组
+        recommend_group = QGroupBox("推荐参数")
+        recommend_form = QFormLayout(recommend_group)
         # 设计主臂长
         self.edit_boom_length = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("设计主臂长L1(m):[范围6~37]"), self.edit_boom_length)
+        recommend_form.addRow(QLabel("设计主臂长L1(m):[范围6~37]"), self.edit_boom_length)
         # 幅度
         self.edit_radius = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("幅度R(m):[范围3~26]"), self.edit_radius)
+        recommend_form.addRow(QLabel("设计幅度R(m):[范围3~26]"), self.edit_radius)
         # 主臂仰角
         self.edit_boom_angle = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("主臂仰角(°):[范围7~76]"), self.edit_boom_angle)
+        recommend_form.addRow(QLabel("主臂仰角(°):[范围7~76]"), self.edit_boom_angle)
         # 额定起重量
         self.edit_rated_weight = QLineEdit()
-        tab_parameters_layout.addRow(QLabel("额定起重量(qt):"), self.edit_rated_weight)
+        recommend_form.addRow(QLabel("额定起重量(qt):"), self.edit_rated_weight)
+        tab_parameters_layout.addWidget(recommend_group)
         self.recommend_tab.addTab(self.tab_parameters, "推荐参数（幅度、臂长、额定起重量）")
         # 添加所有控件到主布局
         main_group = QGroupBox()
@@ -135,9 +160,7 @@ class CraneSelectionDialog(QWidget):
         self.manufacturer_combo.currentTextChanged.connect(self.on_data_changed)
         self.crane_model_combo.currentTextChanged.connect(self.on_data_changed)
         self.capacity_check.stateChanged.connect(self.on_data_changed)
-        self.condition_table_button.clicked.connect(self.on_condition_table_clicked)
-        self.boom_combo.currentTextChanged.connect(self.on_data_changed)
-        self.condition_detail_combo.currentTextChanged.connect(self.on_data_changed)
+        self.condition_table.cellChanged.connect(self.on_data_changed)
         
     def init_table(self):
         """初始化表格"""
@@ -178,11 +201,6 @@ class CraneSelectionDialog(QWidget):
                 if value:
                     self.table.setItem(i, j + 1, QTableWidgetItem(value))
     
-    def on_condition_table_clicked(self):
-        """吊装工况表格按钮点击事件"""
-        self.data_changed.emit()
-        # TODO: 显示吊装工况表格
-        
     def on_data_changed(self):
         """数据改变时发出信号"""
         self.data_changed.emit()
@@ -195,8 +213,8 @@ class CraneSelectionDialog(QWidget):
             'manufacturer': self.manufacturer_combo.currentText(),
             'Str_crane_modelName': self.crane_model_combo.currentText(),
             'capacity_check': self.capacity_check.isChecked(),
-            'boom_type': self.boom_combo.currentText(),
-            'condition_detail': self.condition_detail_combo.currentText()
+            # 'boom_type': self.boom_combo.currentText(),  # 已移除
+            # 'condition_detail': self.condition_detail_combo.currentText()  # 已移除
         }
         
     def set_data(self, data):
@@ -205,8 +223,8 @@ class CraneSelectionDialog(QWidget):
         self.manufacturer_combo.setCurrentText(data.get('manufacturer', '三一'))
         self.crane_model_combo.setCurrentText(data.get('Str_crane_modelName', 'STC500'))
         self.capacity_check.setChecked(data.get('capacity_check', True))
-        self.boom_combo.setCurrentText(data.get('boom_type', '主臂'))
-        self.condition_detail_combo.setCurrentText(data.get('condition_detail', '固定配重30t，支腿全伸，需要二节臂时满伸'))
+        # self.boom_combo.setCurrentText(data.get('boom_type', '主臂'))  # 已移除
+        # self.condition_detail_combo.setCurrentText(data.get('condition_detail', '固定配重30t，支腿全伸，需要二节臂时满伸'))  # 已移除
 
     def show_crane_settings_dialog(self):
         """弹出起重机械设置对话框（模态）"""
