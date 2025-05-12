@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QComboBox, QGridLayout, QGroupBox, QCheckBox)
 from PyQt5.QtCore import Qt, pyqtSignal
-
+"""吊装要求子对话框"""
 class CraneRequirementsDialog(QWidget):
     """吊装要求子对话框"""
     data_changed = pyqtSignal()  # 数据改变信号

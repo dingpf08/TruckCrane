@@ -1,4 +1,21 @@
-#液压汽车起重机吊装计算界面
+"""
+液压汽车起重机吊装计算界面模块
+Hydraulic Truck Crane Lifting Calculation Dialog Module
+
+本模块实现了液压汽车起重机吊装计算的图形用户界面，
+包括参数输入、起重机选型、相关参数设置及工况图展示等功能。
+
+主要类：
+    HydraulicCraneDialog: 主对话框，负责整体界面布局与数据交互。
+    ImageLabel: 支持缩放与拖拽的图片显示控件。
+
+子对话框：
+    CraneRequirementsDialog: 吊装要求设置子对话框。
+    CraneSelectionDialog: 起重机选型子对话框。
+    CraneParametersDialog: 起重机相关参数设置子对话框。
+
+每个子对话框负责其对应参数的采集与校验，通过信号与主对话框联动。
+"""
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QRadioButton, QButtonGroup, QGroupBox, QComboBox, QGridLayout, QFormLayout, QSplitter, QWidget, QMessageBox, QFrame, QTabWidget, QSizePolicy
@@ -26,26 +43,49 @@ from Hoisting_Engineering.CraneParametersDialog import CraneParametersDialog
 # "working_radius": 工作半径，以米为单位。#
 
 class ImageLabel(QLabel):
+    """
+    支持缩放与拖拽的图片显示控件。
+    Image display widget with zoom and drag support.
+    """
     def __init__(self, parent=None):
+        """
+        初始化图片控件。
+        Args:
+            parent: 父控件。
+        """
         super().__init__(parent)
-        self._pixmap = None
-        self._scale = 1.0
-        self._offset = QPoint(0, 0)
-        self._dragging = False
-        self._last_pos = None
+        self._pixmap = None  # 当前显示的QPixmap对象
+        self._scale = 1.0    # 当前缩放比例
+        self._offset = QPoint(0, 0)  # 拖拽偏移量
+        self._dragging = False  # 是否正在拖拽
+        self._last_pos = None   # 上一次鼠标位置
 
     def setPixmap(self, pixmap):
+        """
+        设置要显示的图片，并重置缩放与偏移。
+        Set the pixmap to display and reset scale/offset.
+        Args:
+            pixmap: QPixmap对象。
+        """
         self._pixmap = pixmap
         self._scale = 1.0
         self._offset = QPoint(0, 0)
         self.update_image()
 
     def resizeEvent(self, event):
+        """
+        窗口尺寸变化时，重置偏移并刷新图片。
+        Reset offset and update image on resize.
+        """
         self._offset = QPoint(0, 0)
         self.update_image()
         super().resizeEvent(event)
 
     def wheelEvent(self, event):
+        """
+        鼠标滚轮缩放图片。
+        Zoom image with mouse wheel.
+        """
         if self._pixmap is None or self._pixmap.isNull():
             return
         angle = event.angleDelta().y()
@@ -58,6 +98,10 @@ class ImageLabel(QLabel):
         self.update_image()
 
     def mousePressEvent(self, event):
+        """
+        鼠标按下时准备拖拽。
+        Prepare for dragging on mouse press.
+        """
         if event.button() == Qt.LeftButton:
             self._dragging = True
             self._last_pos = event.pos()
@@ -65,6 +109,10 @@ class ImageLabel(QLabel):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """
+        拖拽图片。
+        Drag image on mouse move.
+        """
         if self._dragging and self._pixmap and not self._pixmap.isNull():
             delta = event.pos() - self._last_pos
             self._offset += delta
@@ -73,12 +121,20 @@ class ImageLabel(QLabel):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """
+        鼠标释放时结束拖拽。
+        End dragging on mouse release.
+        """
         if event.button() == Qt.LeftButton:
             self._dragging = False
             self.setCursor(Qt.ArrowCursor)
         super().mouseReleaseEvent(event)
 
     def update_image(self):
+        """
+        根据当前缩放和偏移刷新图片显示。
+        Update image display according to scale and offset.
+        """
         if self._pixmap and not self._pixmap.isNull():
             w = int(self._pixmap.width() * self._scale)
             h = int(self._pixmap.height() * self._scale)
@@ -95,26 +151,44 @@ class ImageLabel(QLabel):
             super().setPixmap(QPixmap())
 
 class HydraulicCraneDialog(QDialog):
-    def __init__(self, uuid=None, data=None):
-        super().__init__()
-        self.m_name = "液压汽车起重机吊装计算对话框"
+    """
+    液压汽车起重机吊装计算主对话框。
+    Main dialog for hydraulic truck crane lifting calculation.
 
-        self.uuid = uuid
-        self.data = data if data else HydraulicCraneData()
+    功能：
+        - 输入基本参数（吊重、动力系数、推荐/自定义模式）
+        - 通过子对话框设置吊装要求、起重机选型、相关参数
+        - 显示工况图与支腿力计算简图
+        - 数据变更与保存状态管理
+    子对话框：
+        - CraneRequirementsDialog: 采集吊装要求参数
+        - CraneSelectionDialog: 采集起重机选型参数
+        - CraneParametersDialog: 采集起重机相关计算参数
+    """
+    def __init__(self, uuid=None, data=None):
+        """
+        初始化主对话框。
+        Args:
+            uuid: 对话框唯一标识（可选）。
+            data: 初始数据对象（HydraulicCraneData，可选）。
+        """
+        super().__init__()
+        self.m_name = "液压汽车起重机吊装计算对话框"  # 对话框名称
+        self.uuid = uuid  # 对话框唯一标识
+        self.data = data if data else HydraulicCraneData()  # 计算数据对象
         if uuid:
             self.data.uuid = uuid
-        
-        self.IsSave = True  # 保存状态标志
-        # Add verification project initialization
-        self.verification_project = VerificationProject("液压汽车起重机吊装计算")#后续支持修改项目树节点的名称，目前还没有用到
-
+        self.IsSave = True  # 保存状态标志，True表示已保存，False表示有更改未保存
+        self.verification_project = VerificationProject("液压汽车起重机吊装计算")  # 校核项目对象
         self.setMinimumSize(800, 600)
         self.setMaximumSize(1920, 1080)
-
-        self.init_ui()
+        self.init_ui()  # 初始化界面
 
     def init_ui(self):
-        """初始化用户界面"""
+        """
+        初始化用户界面，包括主布局、参数区、图片区及子对话框。
+        Initialize UI: main layout, parameter area, image area, and subdialogs.
+        """
         # 设置窗口标题和初始大小，适配主窗口宽度
         self.setWindowTitle("液压汽车起重机吊装计算")
         self.setGeometry(100, 100, 1500, 800)  # 与主窗口宽度一致
@@ -150,8 +224,8 @@ class HydraulicCraneDialog(QDialog):
         basic_layout.addWidget(self.power_factor_edit, 1, 1)
         # 单选按钮组（智能推荐/自定义）
         radio_group = QButtonGroup(self)
-        self.smart_radio = QRadioButton("智能推荐起重机")
-        self.custom_radio = QRadioButton("自定义起重机")
+        self.smart_radio = QRadioButton("智能推荐起重机")  # 智能推荐模式
+        self.custom_radio = QRadioButton("自定义起重机")  # 自定义模式
         radio_group.addButton(self.smart_radio)
         radio_group.addButton(self.custom_radio)
         self.smart_radio.setChecked(self.data.is_smart_recommendation)
@@ -162,9 +236,9 @@ class HydraulicCraneDialog(QDialog):
         # 2. 创建标签页组件（吊装要求、起重机选型、相关参数）
         tab_widget = QTabWidget()
         # 创建三个子对话框
-        self.requirements_dialog = CraneRequirementsDialog(self)  # 吊装要求
-        self.selection_dialog = CraneSelectionDialog(self)        # 起重机选型
-        self.parameters_dialog = CraneParametersDialog(self)      # 相关参数
+        self.requirements_dialog = CraneRequirementsDialog(self)  # 吊装要求子对话框
+        self.selection_dialog = CraneSelectionDialog(self)        # 起重机选型子对话框
+        self.parameters_dialog = CraneParametersDialog(self)      # 相关参数子对话框
         # 添加标签页
         tab_widget.addTab(self.requirements_dialog, "吊装要求")
         tab_widget.addTab(self.selection_dialog, "起重机选型")
@@ -214,21 +288,30 @@ class HydraulicCraneDialog(QDialog):
         # self.showMaximized()  # 移除自动最大化，避免界面异常放大
 
     def on_data_changed(self):
-        """当数据改变时的处理函数"""
+        """
+        数据变更时的处理函数，标记为未保存。
+        Mark as unsaved when data changes.
+        """
         self.IsSave = False
         
     def updateCalculationData(self):
-        """更新计算数据"""
+        """
+        更新并收集所有界面数据到self.data。
+        Update and collect all UI data into self.data.
+        Returns:
+            HydraulicCraneData: 更新后的数据对象。
+            None: 如果数据转换出错。
+        """
         try:
             # 更新基本参数
-            self.data.crane_weight = float(self.crane_weight_edit.text())
-            self.data.power_factor = float(self.power_factor_edit.text())
-            self.data.is_smart_recommendation = self.smart_radio.isChecked()
+            self.data.crane_weight = float(self.crane_weight_edit.text())  # 吊重
+            self.data.power_factor = float(self.power_factor_edit.text())  # 动力系数
+            self.data.is_smart_recommendation = self.smart_radio.isChecked()  # 推荐/自定义
             
             # 获取子对话框数据
-            requirements_data = self.requirements_dialog.get_data()
-            selection_data = self.selection_dialog.get_data()
-            parameters_data = self.parameters_dialog.get_data()
+            requirements_data = self.requirements_dialog.get_data()  # 吊装要求
+            selection_data = self.selection_dialog.get_data()        # 选型
+            parameters_data = self.parameters_dialog.get_data()      # 相关参数
             
             # 更新吊装要求数据
             self.data.max_lifting_height = requirements_data['max_lifting_height']
@@ -250,13 +333,30 @@ class HydraulicCraneDialog(QDialog):
             return None
             
     def Getuuid(self):
-        """获取对话框的UUID"""
+        """
+        获取对话框的UUID。
+        Get the UUID of the dialog.
+        Returns:
+            str: UUID字符串。
+        """
         return self.uuid
 
     def on_image_tab_changed(self, index):
+        """
+        图片Tab切换时的处理函数。
+        Handle image tab change event.
+        Args:
+            index: 当前选中的Tab索引。
+        """
         self.show_image_by_tab(index)
 
     def show_image_by_tab(self, index):
+        """
+        根据Tab索引显示对应图片。
+        Show image according to tab index.
+        Args:
+            index: Tab索引（0-工况图，1-支腿力简图）。
+        """
         current_dir = os.path.dirname(os.path.abspath(__file__))
         if index == 0:
             image_path = os.path.join(current_dir, "..", "DrawGraphinsScene", "TruckCrane.png")
