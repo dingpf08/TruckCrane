@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QComboBox, QGridLayout, QGroupBox,
-                             QTableWidget, QTableWidgetItem)
+                             QTableWidget, QTableWidgetItem, QPushButton, QDialog)
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QPixmap
+import os
 
 class CraneParametersDialog(QWidget):
     """起重机相关计算参数子对话框"""
@@ -105,9 +107,18 @@ class CraneParametersDialog(QWidget):
         params_layout.addWidget(self.soil_type_combo, 9, 1)
         
         # 地基承载力特征值
-        params_layout.addWidget(QLabel("地基承载力特征值fak(kPa):"), 10, 0)
+        fak_row = QHBoxLayout()
+        fak_label = QLabel("地基承载力特征值fak(kPa):")
+        fak_row.addWidget(fak_label)
         self.soil_strength_edit = QLineEdit("360")
-        params_layout.addWidget(self.soil_strength_edit, 10, 1)
+        fak_row.addWidget(self.soil_strength_edit)
+        # 新增：圆形红框按钮
+        self.fak_btn = QPushButton("...")
+        self.fak_btn.setFixedSize(24, 24)
+        self.fak_btn.setStyleSheet("border: 2px solid red; border-radius: 12px; color: red; font-weight: bold; background: white;")
+        fak_row.addWidget(self.fak_btn)
+        fak_row.addStretch(1)
+        params_layout.addLayout(fak_row, 10, 0, 1, 2)
         
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
@@ -157,6 +168,9 @@ class CraneParametersDialog(QWidget):
         self.weight_combo.currentTextChanged.connect(self.on_data_changed)
         self.has_active_weight_combo.currentTextChanged.connect(self.on_data_changed)
         self.soil_type_combo.currentTextChanged.connect(self.on_data_changed)
+        
+        # 新增：圆形红框按钮信号
+        self.fak_btn.clicked.connect(self.show_fak_table_dialog)
         
     def on_data_changed(self):
         """数据改变时发出信号"""
@@ -208,4 +222,20 @@ class CraneParametersDialog(QWidget):
         self.safety_factor_edit.setText(str(data.get('safety_factor', 1.2)))
         self.foundation_area_edit.setText(str(data.get('foundation_area', 10)))
         self.soil_type_combo.setCurrentText(data.get('soil_type', '碎石土'))
-        self.soil_strength_edit.setText(str(data.get('soil_strength', 360))) 
+        self.soil_strength_edit.setText(str(data.get('soil_strength', 360)))
+        
+    def show_fak_table_dialog(self):
+        """弹出地基承载力标准值图片对话框"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("地基承载力标准值")
+        vbox = QVBoxLayout(dialog)
+        label = QLabel()
+        # 假设图片名为soil_fak_table.png，放在当前py文件同目录
+        img_path = os.path.join(os.path.dirname(__file__), "soil_fak_table.png")
+        pix = QPixmap(img_path)
+        label.setPixmap(pix)
+        label.setScaledContents(True)
+        vbox.addWidget(label)
+        dialog.setLayout(vbox)
+        dialog.setModal(True)
+        dialog.exec_() 
