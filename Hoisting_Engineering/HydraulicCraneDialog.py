@@ -260,8 +260,11 @@ class HydraulicCraneDialog(QDialog):
         self.parameters_dialog = CraneParametersDialog(self)      # 相关参数子对话框
         # 添加标签页
         tab_widget.addTab(self.requirements_dialog, "吊装要求")
+        tab_widget.setTabToolTip(0, "吊装要求")
         tab_widget.addTab(self.selection_dialog, "起重机选型")
+        tab_widget.setTabToolTip(1, "起重机选型")
         tab_widget.addTab(self.parameters_dialog, "起重机相关计算参数")
+        tab_widget.setTabToolTip(2, "起重机相关计算参数")
         # 连接子对话框的数据改变信号
         self.requirements_dialog.data_changed.connect(self.on_data_changed)
         self.selection_dialog.data_changed.connect(self.on_data_changed)

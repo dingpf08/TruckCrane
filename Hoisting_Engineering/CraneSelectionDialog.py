@@ -68,6 +68,7 @@ class CraneSelectionDialog(QWidget):
         self.recommend_tab = QTabWidget()
         # 推荐参数（吊装工况）Tab
         self.tab_condition = QWidget()
+        self.tab_condition.setToolTip("推荐参数（吊装工况）")
         tab_condition_layout = QVBoxLayout(self.tab_condition)
         # 新增：上方控件区（两排，左对齐，纵向对齐）
         condition_top_layout = QFormLayout()
@@ -116,6 +117,7 @@ class CraneSelectionDialog(QWidget):
         self.recommend_tab.addTab(self.tab_condition, "推荐参数（吊装工况）")
         # 推荐参数（幅度、臂长、额定起重量）Tab
         self.tab_parameters = QWidget()
+        self.tab_parameters.setToolTip("推荐参数（幅度、臂长、额定起重量）")
         tab_parameters_layout = QVBoxLayout(self.tab_parameters)
         # 主臂铰链中心至地面距离
         self.edit_hinge_to_ground = QLineEdit("3.05")
@@ -164,10 +166,13 @@ class CraneSelectionDialog(QWidget):
         
         # self.smart_radio.setToolTip('注：选择"智能推荐起重机"，点击下方"推荐"按钮，可对起吊高度、"起重能力"、"吊物安全距离"进行推荐择优！')
         
+        self.condition_table.setToolTip("推荐参数（吊装工况）表格")
+        
     def init_table(self):
         """初始化表格"""
         self.table.setColumnCount(7)
         self.table.setRowCount(15)
+        self.table.setToolTip("推荐参数（幅度、臂长、额定起重量）表格")
         
         # 设置表头
         headers = ["幅度\\主臂长", "11.5", "15.44", "19.38", "27.25", "35.15", "39"]
