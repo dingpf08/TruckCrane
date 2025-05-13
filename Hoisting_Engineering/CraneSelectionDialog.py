@@ -162,6 +162,8 @@ class CraneSelectionDialog(QWidget):
         self.capacity_check.stateChanged.connect(self.on_data_changed)
         self.condition_table.cellChanged.connect(self.on_data_changed)
         
+        # self.smart_radio.setToolTip('注：选择"智能推荐起重机"，点击下方"推荐"按钮，可对起吊高度、"起重能力"、"吊物安全距离"进行推荐择优！')
+        
     def init_table(self):
         """初始化表格"""
         self.table.setColumnCount(7)

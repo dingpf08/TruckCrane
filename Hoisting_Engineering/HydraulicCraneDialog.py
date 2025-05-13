@@ -1,5 +1,5 @@
 """
-液压汽车起重机吊装计算界面模块
+主对话框：液压汽车起重机吊装计算界面模块
 Hydraulic Truck Crane Lifting Calculation Dialog Module
 
 本模块实现了液压汽车起重机吊装计算的图形用户界面，
@@ -247,6 +247,7 @@ class HydraulicCraneDialog(QDialog):
         radio_group.addButton(self.custom_radio)
         self.smart_radio.setChecked(self.data.is_smart_recommendation)
         self.custom_radio.setChecked(not self.data.is_smart_recommendation)
+        self.smart_radio.setToolTip('注：选择"智能推荐起重机"，点击下方"推荐"按钮，可对起吊高度、"起重能力"、"吊物安全距离"进行推荐择优！')
         basic_layout.addWidget(self.smart_radio, 2, 0)
         basic_layout.addWidget(self.custom_radio, 2, 1)
         basic_group.setLayout(basic_layout)
