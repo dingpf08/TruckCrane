@@ -115,6 +115,7 @@ class CraneSelectionDialog(QWidget):
                     self.condition_table.setItem(i, j + 1, QTableWidgetItem(value))
         tab_condition_layout.addWidget(self.condition_table)
         self.recommend_tab.addTab(self.tab_condition, "推荐参数（吊装工况）")
+        self.recommend_tab.setTabToolTip(0, "推荐参数（吊装工况）")
         # 推荐参数（幅度、臂长、额定起重量）Tab
         self.tab_parameters = QWidget()
         self.tab_parameters.setToolTip("推荐参数（幅度、臂长、额定起重量）")
@@ -148,6 +149,7 @@ class CraneSelectionDialog(QWidget):
         recommend_form.addRow(QLabel("额定起重量(qt):"), self.edit_rated_weight)
         tab_parameters_layout.addWidget(recommend_group)
         self.recommend_tab.addTab(self.tab_parameters, "推荐参数（幅度、臂长、额定起重量）")
+        self.recommend_tab.setTabToolTip(1, "推荐参数（幅度、臂长、额定起重量）")
         # 添加所有控件到主布局
         main_group = QGroupBox()
         main_layout = QVBoxLayout(main_group)
