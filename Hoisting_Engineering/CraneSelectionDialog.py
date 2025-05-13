@@ -118,13 +118,13 @@ class CraneSelectionDialog(QWidget):
         self.tab_parameters = QWidget()
         tab_parameters_layout = QVBoxLayout(self.tab_parameters)
         # 主臂铰链中心至地面距离
-        self.edit_hinge_to_ground = QLineEdit()
+        self.edit_hinge_to_ground = QLineEdit("3.05")
         row_hinge_to_ground = QHBoxLayout()
         row_hinge_to_ground.addWidget(QLabel("主臂铰链中心至地面距离h1(m):"))
         row_hinge_to_ground.addWidget(self.edit_hinge_to_ground)
         tab_parameters_layout.addLayout(row_hinge_to_ground)
         # 主臂铰链中心至回转中心距离
-        self.edit_hinge_to_rotation = QLineEdit()
+        self.edit_hinge_to_rotation = QLineEdit("1.973")
         row_hinge_to_rotation = QHBoxLayout()
         row_hinge_to_rotation.addWidget(QLabel("主臂铰链中心至回转中心a1(m):"))
         row_hinge_to_rotation.addWidget(self.edit_hinge_to_rotation)
@@ -133,16 +133,16 @@ class CraneSelectionDialog(QWidget):
         recommend_group = QGroupBox("推荐参数")
         recommend_form = QFormLayout(recommend_group)
         # 设计主臂长
-        self.edit_boom_length = QLineEdit()
+        self.edit_boom_length = QLineEdit("15.44")
         recommend_form.addRow(QLabel("设计主臂长L1(m):[范围6~37]"), self.edit_boom_length)
         # 幅度
-        self.edit_radius = QLineEdit()
+        self.edit_radius = QLineEdit("3")
         recommend_form.addRow(QLabel("设计幅度R(m):[范围3~26]"), self.edit_radius)
         # 主臂仰角
-        self.edit_boom_angle = QLineEdit()
+        self.edit_boom_angle = QLineEdit("71.21")
         recommend_form.addRow(QLabel("主臂仰角(°):[范围7~76]"), self.edit_boom_angle)
         # 额定起重量
-        self.edit_rated_weight = QLineEdit()
+        self.edit_rated_weight = QLineEdit("40")
         recommend_form.addRow(QLabel("额定起重量(qt):"), self.edit_rated_weight)
         tab_parameters_layout.addWidget(recommend_group)
         self.recommend_tab.addTab(self.tab_parameters, "推荐参数（幅度、臂长、额定起重量）")

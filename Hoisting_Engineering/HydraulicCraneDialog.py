@@ -205,11 +205,16 @@ class HydraulicCraneDialog(QDialog):
         """)
         # 设置TabWidget分界线样式
         tab_bar_style = """
+        QTabWidget::tab-bar {
+            qproperty-expanding: 1;
+        }
         QTabBar::tab {
             border-right: 2px solid #a0a0a0;
             padding: 4px 12px 4px 12px;
             font-family: 'SimHei', '黑体', 'Microsoft YaHei', Arial, sans-serif;
             font-weight: bold;
+            font-size: 10pt;
+            min-width: 0;
         }
         QTabBar::tab:last {
             border-right: none;
