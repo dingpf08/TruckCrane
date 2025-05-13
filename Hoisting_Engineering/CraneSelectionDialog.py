@@ -170,6 +170,8 @@ class CraneSelectionDialog(QWidget):
         
         self.condition_table.setToolTip("推荐参数（吊装工况）表格")
         
+        # self.custom_radio.setEnabled(False)
+        
     def init_table(self):
         """初始化表格"""
         self.table.setColumnCount(7)
