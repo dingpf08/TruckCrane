@@ -50,29 +50,28 @@ def extract_info_from_filename(filename):
         # 提取文件名 (不含扩展名)
         base_name = os.path.splitext(os.path.basename(filename))[0]
         
-        # 提取括号中的内容
-        brackets = re.findall(r'\(([^)]*)\)', base_name)
+        # 从文件名模式识别格式
+        main_pattern = r'^(\d+)-\((.+?)\)-\((.+?)\)'
+        jib_pattern = r'^\((.+?)\)-\((.+?)\)'
         
-        # 判断文件类型
-        if len(brackets) >= 2 and re.match(r'^\d+-(', base_name):
-            # 格式1: 工况编号-(汽车吊型号)-(工况名称).xlsx - 主臂吊装工况
-            condition_id_match = re.match(r'^(\d+)-', base_name)
-            condition_id = int(condition_id_match.group(1)) if condition_id_match else 0
-            
-            truck_crane_id = brackets[0]  # 第一个括号: 汽车吊型号
-            work_condition = brackets[1]  # 第二个括号: 工况名称
-            
-            # 返回格式: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
+        # 尝试匹配主臂吊装工况格式
+        main_match = re.match(main_pattern, base_name)
+        if main_match:
+            condition_id = int(main_match.group(1))
+            truck_crane_id = main_match.group(2)
+            work_condition = main_match.group(3)
             return truck_crane_id, condition_id, work_condition, False, None
-        elif len(brackets) >= 2:
-            # 格式2: (汽车吊型号)-(主臂+副臂工况名称).xlsx - 主臂+副臂吊装工况
-            truck_crane_id = brackets[0]  # 第一个括号: 汽车吊型号
-            jib_condition = brackets[1]  # 第二个括号: 主臂+副臂工况名称
-            
-            # 返回格式: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
+        
+        # 尝试匹配主臂+副臂吊装工况格式
+        jib_match = re.match(jib_pattern, base_name)
+        if jib_match:
+            truck_crane_id = jib_match.group(1)
+            jib_condition = jib_match.group(2)
             return truck_crane_id, None, None, True, jib_condition
-        else:
-            raise ValueError(f"文件名 '{filename}' 不符合要求的格式")
+        
+        # 如果都不匹配，抛出错误
+        raise ValueError(f"文件名 '{base_name}' 不符合要求的格式")
+        
     except Exception as e:
         raise ValueError(f"处理文件名 '{filename}' 时出错: {str(e)}")
 
@@ -314,12 +313,17 @@ def main():
     root.withdraw()  # 隐藏主窗口
     
     print("原始Excel转数据库格式工具")
-    print("============================")
-    print("请选择要处理的Excel文件...")
+    print("============================\n")
+    print("本工具可以一次性处理主臂吊装工况和主臂+副臂吊装工况的Excel文件")
+    print("文件名格式要求:")
+    print("  - 主臂工况格式: 工况编号-(汽车吊型号)-(工况名称).xlsx")
+    print("  - 副臂工况格式: (汽车吊型号)-(工况名称).xlsx")
+    print("============================\n")
+    print("请选择要处理的Excel文件(可同时选择主臂工况和主臂+副臂工况文件)...")
     
     # 打开文件选择对话框
     file_paths = filedialog.askopenfilenames(
-        title="选择需要处理的Excel文件",
+        title="选择需要处理的Excel文件 (主臂工况和主臂+副臂工况)",
         filetypes=[("Excel文件", "*.xlsx *.xls")]
     )
     
@@ -353,14 +357,18 @@ def main():
         print(f"总计处理 {len(merged_df)} 行数据")
         print(f"输出文件: {output_path}")
         
+        # 打印工况类型统计
+        main_conditions = merged_df[merged_df['IsJibHosCon'] == "否"].shape[0]
+        jib_conditions = merged_df[merged_df['IsJibHosCon'] == "是"].shape[0]
+        print(f"  - 主臂工况数据: {main_conditions} 行")
+        print(f"  - 主臂+副臂工况数据: {jib_conditions} 行")
+        
         # 显示成功消息
         messagebox.showinfo("处理完成", 
-            f"成功处理 {len(file_paths)} 个文件，共 {len(merged_df)} 行数据\n\n" +
+            f"成功处理 {len(file_paths)} 个文件，共 {len(merged_df)} 行数据\n" +
+            f"  - 主臂工况数据: {main_conditions} 行\n" +
+            f"  - 主臂+副臂工况数据: {jib_conditions} 行\n\n" +
             f"输出文件: {os.path.basename(output_path)}")
-            
-        # 询问是否继续添加主臂+副臂吊装工况的Excel文件
-        if messagebox.askyesno("继续处理", "是否继续添加主臂+副臂吊装工况的Excel文件?"):
-            process_additional_files(output_path, truck_crane_ids)
             
     except Exception as e:
         error_msg = f"处理过程中发生错误: {str(e)}"
@@ -372,89 +380,6 @@ def main():
         root.destroy()
     else:
         main()  # 重新启动处理流程
-
-def process_additional_files(previous_output_path, truck_crane_ids):
-    """
-    处理主臂+副臂吊装工况的Excel文件并合并到之前的结果中
-    
-    Args:
-        previous_output_path (str): 之前生成的输出文件路径
-        truck_crane_ids (list): 之前处理的汽车吊型号列表
-    """
-    root = tk.Tk()
-    root.title("选择主臂+副臂吊装工况Excel文件")
-    root.withdraw()  # 隐藏主窗口
-    
-    # 打开文件选择对话框
-    file_paths = filedialog.askopenfilenames(
-        title="选择主臂+副臂吊装工况Excel文件",
-        filetypes=[("Excel文件", "*.xlsx *.xls")]
-    )
-    
-    if not file_paths:
-        print("未选择任何主臂+副臂吊装工况文件，保持原文件不变")
-        return
-    
-    try:
-        # 读取之前的输出文件
-        print(f"\n读取之前的输出文件: {previous_output_path}")
-        previous_df = pd.read_excel(previous_output_path)
-        
-        # 处理新选择的文件
-        print(f"处理新选择的 {len(file_paths)} 个主臂+副臂吊装工况文件")
-        additional_df, additional_crane_ids = process_multiple_files(file_paths)
-        
-        # 合并数据
-        all_crane_ids = set(truck_crane_ids + additional_crane_ids)
-        merged_df = pd.concat([previous_df, additional_df], ignore_index=True)
-        
-        # 按照要求排序
-        merged_df = merged_df.sort_values(by=[
-            'TruckCraneID', 
-            'ConditionID', 
-            'SpeWorkCondition', 
-            'TruckCraneMainArmLen', 
-            'TruckCraneRange', 
-            'TruckCraneRatedLiftingCap'
-        ])
-        
-        # 生成新的输出文件名（保持同一目录，但使用新的时间戳）
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.dirname(previous_output_path)
-        
-        # 如果所有文件都是同一个汽车吊，则使用其名称
-        if len(all_crane_ids) == 1:
-            base_name = f"{list(all_crane_ids)[0]}-额定起重量表-{timestamp}.xlsx"
-        else:
-            # 否则使用通用名称
-            base_name = f"多种汽车吊-额定起重量表-{timestamp}.xlsx"
-            
-        new_output_path = os.path.join(output_dir, base_name)
-        
-        # 保存合并后的数据
-        merged_df.to_excel(new_output_path, index=False)
-        
-        print(f"\n合并处理完成!")
-        print(f"总计处理 {len(merged_df)} 行数据")
-        print(f"新输出文件: {new_output_path}")
-        
-        # 显示成功消息
-        messagebox.showinfo("合并处理完成", 
-            f"成功合并处理，共 {len(merged_df)} 行数据\n\n" +
-            f"新输出文件: {os.path.basename(new_output_path)}")
-        
-        # 询问是否需要删除之前的输出文件
-        if messagebox.askyesno("文件管理", f"是否删除之前的输出文件?\n{os.path.basename(previous_output_path)}"):
-            try:
-                os.remove(previous_output_path)
-                print(f"已删除之前的输出文件: {previous_output_path}")
-            except Exception as e:
-                print(f"删除文件失败: {str(e)}")
-                
-    except Exception as e:
-        error_msg = f"处理主臂+副臂吊装工况文件时出错: {str(e)}"
-        print(f"\n错误: {error_msg}")
-        messagebox.showerror("处理错误", error_msg)
 
 def process_jib_excel_file(file_path):
     """
