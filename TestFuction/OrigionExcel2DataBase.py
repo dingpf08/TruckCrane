@@ -34,30 +34,43 @@ from pathlib import Path
 
 def extract_info_from_filename(filename):
     """
-    从文件名中提取汽车吊型号、工况编号和工况名称
-    
-    文件名格式: 1-(STC250E-1)-(配重6.2t，支腿全伸).xlsx
+    从文件名中提取信息，可以处理两种格式的文件名：
+    1. 主臂吊装工况: 工况编号-(汽车吊型号)-(工况名称).xlsx
+    2. 主臂+副臂吊装工况: (汽车吊型号)-(主臂+副臂工况名称).xlsx
     
     Args:
         filename (str): 文件名
         
     Returns:
-        tuple: (汽车吊型号, 工况编号, 工况名称)
+        tuple: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
+               对于主臂工况，副臂工况名称为None
+               对于副臂工况，工况编号为None
     """
     try:
         # 提取文件名 (不含扩展名)
         base_name = os.path.splitext(os.path.basename(filename))[0]
         
-        # 提取工况编号 (文件名开头的数字)
-        condition_id_match = re.match(r'^(\d+)-', base_name)
-        condition_id = int(condition_id_match.group(1)) if condition_id_match else 0
-        
         # 提取括号中的内容
         brackets = re.findall(r'\(([^)]*)\)', base_name)
-        if len(brackets) >= 2:
+        
+        # 判断文件类型
+        if len(brackets) >= 2 and re.match(r'^\d+-(', base_name):
+            # 格式1: 工况编号-(汽车吊型号)-(工况名称).xlsx - 主臂吊装工况
+            condition_id_match = re.match(r'^(\d+)-', base_name)
+            condition_id = int(condition_id_match.group(1)) if condition_id_match else 0
+            
             truck_crane_id = brackets[0]  # 第一个括号: 汽车吊型号
             work_condition = brackets[1]  # 第二个括号: 工况名称
-            return truck_crane_id, condition_id, work_condition
+            
+            # 返回格式: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
+            return truck_crane_id, condition_id, work_condition, False, None
+        elif len(brackets) >= 2:
+            # 格式2: (汽车吊型号)-(主臂+副臂工况名称).xlsx - 主臂+副臂吊装工况
+            truck_crane_id = brackets[0]  # 第一个括号: 汽车吊型号
+            jib_condition = brackets[1]  # 第二个括号: 主臂+副臂工况名称
+            
+            # 返回格式: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
+            return truck_crane_id, None, None, True, jib_condition
         else:
             raise ValueError(f"文件名 '{filename}' 不符合要求的格式")
     except Exception as e:
@@ -75,9 +88,14 @@ def process_excel_file(file_path):
     """
     # 从文件名提取信息
     file_name = os.path.basename(file_path)
-    truck_crane_id, condition_id, work_condition = extract_info_from_filename(file_name)
+    truck_crane_id, condition_id, work_condition, is_jib, jib_condition = extract_info_from_filename(file_name)
     
-    # 读取Excel文件
+    # 根据文件名判断是否为副臂工况文件
+    if is_jib:
+        # 如果是副臂工况文件，使用专门的处理函数
+        return process_jib_excel_file(file_path), truck_crane_id
+    
+    # 以下是处理主臂工况文件的代码
     try:
         # 添加详细打印以便调试
         print(f"  - 开始读取文件: {file_path}")
@@ -190,14 +208,19 @@ def process_excel_file(file_path):
                     if lifting_cap <= 0:
                         continue
                     
-                    # 添加到结果列表
+                    # 添加到结果列表，包含新增的列
                     results.append({
-                        'TruckCraneID': truck_crane_id,
-                        'ConditionID': condition_id,
-                        'SpeWorkCondition': work_condition,
-                        'TruckCraneRange': range_val,
-                        'TruckCraneMainArmLen': arm_len,
-                        'TruckCraneRatedLiftingCap': lifting_cap
+                        'TruckCraneID': truck_crane_id,  # 汽车吊型号
+                        'ConditionID': condition_id,    # 工况编号
+                        'SpeWorkCondition': work_condition,  # 工况名称
+                        'TruckCraneRange': range_val,   # 幅度
+                        'TruckCraneMainArmLen': arm_len,  # 主臂长
+                        'TruckCraneRatedLiftingCap': lifting_cap,  # 额定吊重
+                        'IsJibHosCon': "否",  # 标记为主臂工况
+                        'SecondSpeWorkCondition': "",  # 副臂工况名称留空
+                        'SecondElevation': 0,  # 仰角留空
+                        'SecondMainArmLen': 0,  # 主臂+副臂主臂长留空
+                        'SecondTruckCraneRatedLiftingCap': 0  # 主臂+副臂额定吊重留空
                     })
                 except Exception as e:
                     print(f"Warning: 处理数据时出错 (行={range_idx+2}, 列={arm_idx+2}): {str(e)}")
@@ -254,6 +277,22 @@ def process_multiple_files(file_paths):
         
     # 合并所有数据帧
     merged_df = pd.concat(all_data, ignore_index=True)
+    
+    # 确保所有必要的列都存在
+    required_columns = [
+        'TruckCraneID', 'ConditionID', 'SpeWorkCondition', 
+        'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap',
+        'IsJibHosCon', 'SecondSpeWorkCondition', 'SecondElevation',
+        'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap'
+    ]
+    
+    # 添加缺失的列
+    for col in required_columns:
+        if col not in merged_df.columns:
+            if col == 'IsJibHosCon':
+                merged_df[col] = "否"  # 默认为非副臂工况
+            else:
+                merged_df[col] = 0 if col not in ['TruckCraneID', 'SpeWorkCondition', 'SecondSpeWorkCondition'] else ""
     
     # 按照要求排序
     merged_df = merged_df.sort_values(by=[
@@ -416,6 +455,143 @@ def process_additional_files(previous_output_path, truck_crane_ids):
         error_msg = f"处理主臂+副臂吊装工况文件时出错: {str(e)}"
         print(f"\n错误: {error_msg}")
         messagebox.showerror("处理错误", error_msg)
+
+def process_jib_excel_file(file_path):
+    """
+    处理主臂+副臂工况的Excel文件
+    
+    文件格式：第一行第二列的单元格是主臂长，第一列是仰角，第二列是对应的主臂+副臂额定吊重
+    
+    Args:
+        file_path (str): Excel文件路径
+        
+    Returns:
+        DataFrame: 处理后的数据帧
+    """
+    # 从文件名提取信息
+    file_name = os.path.basename(file_path)
+    truck_crane_id, _, _, is_jib, jib_condition = extract_info_from_filename(file_name)
+    
+    if not is_jib:
+        raise ValueError(f"文件 '{file_name}' 不是主臂+副臂工况文件")
+    
+    try:
+        # 添加详细打印以便调试
+        print(f"  - 开始读取主臂+副臂工况文件: {file_path}")
+        
+        # 读取Excel文件
+        df = pd.read_excel(file_path, header=None, engine='openpyxl')
+        
+        if df.empty:
+            raise ValueError("Excel文件不包含数据")
+            
+        # 打印表格尺寸以便调试
+        print(f"  - 表格尺寸: {df.shape[0]}行 x {df.shape[1]}列")
+        
+        # 检查数据格式
+        if df.shape[0] < 2 or df.shape[1] < 2:
+            raise ValueError("Excel表格至少需要2行2列")
+            
+        # 获取主臂长 - 从第一行第二列单元格
+        try:
+            main_arm_len = df.iloc[0, 1]
+            if pd.isna(main_arm_len):
+                raise ValueError("第一行第二列(主臂长)不能为空")
+                
+            main_arm_len = float(main_arm_len)
+            print(f"  - 检测到主臂长: {main_arm_len}m")
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"无法解析主臂长数值: {str(e)}")
+            
+        # 获取仰角列表 - 从第一列（从第二行开始）
+        elevations = []
+        for i in range(1, df.shape[0]):
+            val = df.iloc[i, 0]
+            if pd.notna(val):
+                try:
+                    if isinstance(val, str):
+                        # 清理字符串值，去除可能的单位等
+                        clean_val = ''.join(c for c in val if c.isdigit() or c == '.' or c == '-')
+                        elevation = float(clean_val) if clean_val else None
+                    else:
+                        elevation = float(val)
+                        
+                    if elevation is not None:
+                        elevations.append((i, elevation))
+                except Exception as e:
+                    print(f"  - 警告: 无法解析仰角值 {val} 在行 {i+1}: {str(e)}")
+        
+        if not elevations:
+            raise ValueError("未能提取到有效的仰角数据")
+            
+        print(f"  - 检测到 {len(elevations)} 个有效仰角值")
+        
+        # 处理额定吊重数据
+        results = []
+        for idx, elevation in elevations:
+            try:
+                # 获取对应行的额定吊重（第二列）
+                lifting_cap = df.iloc[idx, 1]
+                
+                # 检查是否有效
+                if pd.isna(lifting_cap):
+                    continue
+                    
+                # 处理字符串值
+                if isinstance(lifting_cap, str):
+                    lifting_cap = lifting_cap.strip()
+                    if not lifting_cap:
+                        continue
+                    
+                    # 清理字符串，去除非数字字符
+                    clean_val = ''.join(c for c in lifting_cap if c.isdigit() or c == '.' or c == '-')
+                    if not clean_val:
+                        continue
+                        
+                    try:
+                        lifting_cap = float(clean_val)
+                    except:
+                        print(f"  - 警告: 无法将值 '{lifting_cap}' 转换为数字，在行 {idx+1}")
+                        continue
+                else:
+                    try:
+                        lifting_cap = float(lifting_cap)
+                    except:
+                        print(f"  - 警告: 无法将值 '{lifting_cap}' 转换为数字，在行 {idx+1}")
+                        continue
+                
+                # 跳过0或负值
+                if lifting_cap <= 0:
+                    continue
+                    
+                # 添加到结果列表
+                # 主臂+副臂工况数据使用新增列
+                results.append({
+                    'TruckCraneID': truck_crane_id,
+                    'ConditionID': 0,  # 默认值，可以根据需要调整
+                    'SpeWorkCondition': "",  # 主臂工况留空
+                    'TruckCraneRange': 0,  # 主臂幅度留空
+                    'TruckCraneMainArmLen': 0,  # 主臂长留空
+                    'TruckCraneRatedLiftingCap': 0,  # 主臂额定吊重留空
+                    'IsJibHosCon': "是",  # 标记为副臂工况
+                    'SecondSpeWorkCondition': jib_condition,  # 主臂+副臂工况名称
+                    'SecondElevation': elevation,  # 仰角
+                    'SecondMainArmLen': main_arm_len,  # 主臂+副臂工况下的主臂长
+                    'SecondTruckCraneRatedLiftingCap': lifting_cap  # 主臂+副臂额定吊重
+                })
+            except Exception as e:
+                print(f"  - 警告: 处理主臂+副臂数据时出错 (行={idx+1}): {str(e)}")
+                
+        # 创建结果数据帧
+        result_df = pd.DataFrame(results)
+        
+        if result_df.empty:
+            raise ValueError("未能从主臂+副臂工况文件中提取有效数据")
+            
+        return result_df
+        
+    except Exception as e:
+        raise ValueError(f"处理主臂+副臂工况文件 '{file_path}' 时出错: {str(e)}")
 
 if __name__ == "__main__":
     main()
