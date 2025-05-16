@@ -319,6 +319,10 @@ def main():
             f"成功处理 {len(file_paths)} 个文件，共 {len(merged_df)} 行数据\n\n" +
             f"输出文件: {os.path.basename(output_path)}")
             
+        # 询问是否继续添加主臂+副臂吊装工况的Excel文件
+        if messagebox.askyesno("继续处理", "是否继续添加主臂+副臂吊装工况的Excel文件?"):
+            process_additional_files(output_path, truck_crane_ids)
+            
     except Exception as e:
         error_msg = f"处理过程中发生错误: {str(e)}"
         print(f"\n错误: {error_msg}")
@@ -329,6 +333,89 @@ def main():
         root.destroy()
     else:
         main()  # 重新启动处理流程
+
+def process_additional_files(previous_output_path, truck_crane_ids):
+    """
+    处理主臂+副臂吊装工况的Excel文件并合并到之前的结果中
+    
+    Args:
+        previous_output_path (str): 之前生成的输出文件路径
+        truck_crane_ids (list): 之前处理的汽车吊型号列表
+    """
+    root = tk.Tk()
+    root.title("选择主臂+副臂吊装工况Excel文件")
+    root.withdraw()  # 隐藏主窗口
+    
+    # 打开文件选择对话框
+    file_paths = filedialog.askopenfilenames(
+        title="选择主臂+副臂吊装工况Excel文件",
+        filetypes=[("Excel文件", "*.xlsx *.xls")]
+    )
+    
+    if not file_paths:
+        print("未选择任何主臂+副臂吊装工况文件，保持原文件不变")
+        return
+    
+    try:
+        # 读取之前的输出文件
+        print(f"\n读取之前的输出文件: {previous_output_path}")
+        previous_df = pd.read_excel(previous_output_path)
+        
+        # 处理新选择的文件
+        print(f"处理新选择的 {len(file_paths)} 个主臂+副臂吊装工况文件")
+        additional_df, additional_crane_ids = process_multiple_files(file_paths)
+        
+        # 合并数据
+        all_crane_ids = set(truck_crane_ids + additional_crane_ids)
+        merged_df = pd.concat([previous_df, additional_df], ignore_index=True)
+        
+        # 按照要求排序
+        merged_df = merged_df.sort_values(by=[
+            'TruckCraneID', 
+            'ConditionID', 
+            'SpeWorkCondition', 
+            'TruckCraneMainArmLen', 
+            'TruckCraneRange', 
+            'TruckCraneRatedLiftingCap'
+        ])
+        
+        # 生成新的输出文件名（保持同一目录，但使用新的时间戳）
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = os.path.dirname(previous_output_path)
+        
+        # 如果所有文件都是同一个汽车吊，则使用其名称
+        if len(all_crane_ids) == 1:
+            base_name = f"{list(all_crane_ids)[0]}-额定起重量表-{timestamp}.xlsx"
+        else:
+            # 否则使用通用名称
+            base_name = f"多种汽车吊-额定起重量表-{timestamp}.xlsx"
+            
+        new_output_path = os.path.join(output_dir, base_name)
+        
+        # 保存合并后的数据
+        merged_df.to_excel(new_output_path, index=False)
+        
+        print(f"\n合并处理完成!")
+        print(f"总计处理 {len(merged_df)} 行数据")
+        print(f"新输出文件: {new_output_path}")
+        
+        # 显示成功消息
+        messagebox.showinfo("合并处理完成", 
+            f"成功合并处理，共 {len(merged_df)} 行数据\n\n" +
+            f"新输出文件: {os.path.basename(new_output_path)}")
+        
+        # 询问是否需要删除之前的输出文件
+        if messagebox.askyesno("文件管理", f"是否删除之前的输出文件?\n{os.path.basename(previous_output_path)}"):
+            try:
+                os.remove(previous_output_path)
+                print(f"已删除之前的输出文件: {previous_output_path}")
+            except Exception as e:
+                print(f"删除文件失败: {str(e)}")
+                
+    except Exception as e:
+        error_msg = f"处理主臂+副臂吊装工况文件时出错: {str(e)}"
+        print(f"\n错误: {error_msg}")
+        messagebox.showerror("处理错误", error_msg)
 
 if __name__ == "__main__":
     main()
