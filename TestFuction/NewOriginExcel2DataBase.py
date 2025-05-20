@@ -285,8 +285,20 @@ def process_jib_excel_file(file_path):
         
         # --- 处理第一个副臂工况 ---
         # 尝试从第一行第二列（索引1）获取第一个工况名称
-        jib_condition_1 = df.iloc[0, 1] if df.shape[1] > 1 and pd.notna(df.iloc[0, 1]) else f"{jib_condition_from_filename}_工况1"
-        print(f"  - 识别到第一个副臂工况名称: {jib_condition_1}")
+        # 从文件内容第一行获取具体工况名称，如果为空则使用文件名中的副臂工况名称作为 fallback
+        jib_content_condition_1 = df.iloc[0, 1] if df.shape[1] > 1 and pd.notna(df.iloc[0, 1]) else ""
+        if not isinstance(jib_content_condition_1, str): # Ensure it's a string
+            jib_content_condition_1 = str(jib_content_condition_1)
+        jib_content_condition_1 = jib_content_condition_1.strip()
+        
+        # 构建最终的 SecondSpeWorkCondition
+        final_second_spe_work_condition_1 = jib_condition_from_filename
+        if jib_content_condition_1:
+            final_second_spe_work_condition_1 = f"{final_second_spe_work_condition_1}, {jib_content_condition_1}"
+        elif not final_second_spe_work_condition_1: # If both are empty, use a default
+            final_second_spe_work_condition_1 = "未知副臂工况"
+
+        print(f"  - 识别到第一个副臂工况名称 (文件内容): '{jib_content_condition_1}', 最终输出: '{final_second_spe_work_condition_1}'")
         
         # 第一个工况的仰角在第一列 (索引 0), 从第3行 (索引 2) 开始
         elevations_1 = df.iloc[2:, 0].values
@@ -348,16 +360,28 @@ def process_jib_excel_file(file_path):
                     'TruckCraneMainArmLen': None, # 副臂工况没有主臂长度的概念直接体现在这里，填充None
                     'TruckCraneRatedLiftingCap': None, # 副臂工况没有主臂额定吊重，填充None
                     'IsJibHosCon': "是",
-                    'SecondSpeWorkCondition': jib_condition_1,
+                    'SecondSpeWorkCondition': final_second_spe_work_condition_1,
                     'SecondElevation': elevation_val,
-                    'SecondMainArmLen': None, # 副臂主臂长可能需要从名称或仰角推断，这里先留空，后续可填充
+                    'SecondMainArmLen': range_val, # 副臂工作幅度，从第二行提取
                     'SecondTruckCraneRatedLiftingCap': lifting_cap_val
                 })
         
         # --- 处理第二个副臂工况 ---
         # 尝试从第一行第五列（索引4）获取第二个工况名称 (假设间隔3列)
-        jib_condition_2 = df.iloc[0, 4] if df.shape[1] > 4 and pd.notna(df.iloc[0, 4]) else f"{jib_condition_from_filename}_工况2"
-        print(f"  - 识别到第二个副臂工况名称: {jib_condition_2}")
+        # 从文件内容第一行获取具体工况名称，如果为空则使用文件名中的副臂工况名称作为 fallback
+        jib_content_condition_2 = df.iloc[0, 4] if df.shape[1] > 4 and pd.notna(df.iloc[0, 4]) else ""
+        if not isinstance(jib_content_condition_2, str): # Ensure it's a string
+            jib_content_condition_2 = str(jib_content_condition_2)
+        jib_content_condition_2 = jib_content_condition_2.strip()
+        
+        # 构建最终的 SecondSpeWorkCondition
+        final_second_spe_work_condition_2 = jib_condition_from_filename
+        if jib_content_condition_2:
+            final_second_spe_work_condition_2 = f"{final_second_spe_work_condition_2}, {jib_content_condition_2}"
+        elif not final_second_spe_work_condition_2: # If both are empty, use a default
+            final_second_spe_work_condition_2 = "未知副臂工况"
+
+        print(f"  - 识别到第二个副臂工况名称 (文件内容): '{jib_content_condition_2}', 最终输出: '{final_second_spe_work_condition_2}'")
 
         # 第二个工况的仰角在第八列 (索引 7), 从第3行 (索引 2) 开始
         elevations_2 = df.iloc[2:, 7].values
@@ -418,9 +442,9 @@ def process_jib_excel_file(file_path):
                     'TruckCraneMainArmLen': None,
                     'TruckCraneRatedLiftingCap': None,
                     'IsJibHosCon': "是",
-                    'SecondSpeWorkCondition': jib_condition_2,
+                    'SecondSpeWorkCondition': final_second_spe_work_condition_2,
                     'SecondElevation': elevation_val,
-                    'SecondMainArmLen': None, # 副臂主臂长
+                    'SecondMainArmLen': range_val, # 副臂工作幅度，从第二行提取
                     'SecondTruckCraneRatedLiftingCap': lifting_cap_val
                 })
 
@@ -836,6 +860,39 @@ def main():
         )
                       
         messagebox.showinfo("处理完成", success_msg)
+
+        # 询问用户是否打开生成的文件
+        if messagebox.askyesno("操作完成", f"文件处理完成！\n\n统计信息已保存到:\n{stat_path}\n\n转换后的Excel已保存到:\n{output_path}\n\n是否现在打开这两个文件？"):
+             import subprocess
+             import platform
+             
+             # 尝试打开统计文件
+             if os.path.exists(stat_path):
+                  try:
+                      if platform.system() == "Windows":
+                          os.startfile(stat_path)
+                      elif platform.system() == "Darwin":
+                          subprocess.Popen(["open", stat_path])
+                      else:
+                          subprocess.Popen(["xdg-open", stat_path])
+                  except FileNotFoundError:
+                       messagebox.showerror("错误", f"无法找到打开统计文件 {stat_path} 的应用程序。")
+                  except Exception as open_error:
+                       messagebox.showerror("打开统计文件错误", f"打开统计文件时发生错误: {open_error}")
+
+             # 尝试打开Excel文件
+             if output_path and os.path.exists(output_path):
+                  try:
+                      if platform.system() == "Windows":
+                          os.startfile(output_path)
+                      elif platform.system() == "Darwin":
+                          subprocess.Popen(["open", output_path])
+                      else:
+                          subprocess.Popen(["xdg-open", output_path])
+                  except FileNotFoundError:
+                       messagebox.showerror("错误", f"无法找到打开Excel文件 {output_path} 的应用程序。")
+                  except Exception as open_error:
+                       messagebox.showerror("打开Excel文件错误", f"打开Excel文件时发生错误: {open_error}")
 
 
     except Exception as e:
