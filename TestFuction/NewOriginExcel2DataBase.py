@@ -538,6 +538,11 @@ def process_multiple_files(file_paths):
     # 合并所有主臂数据
     if main_data_list:
         df_main = pd.concat(main_data_list, ignore_index=True)
+        # 强制确保 ConditionID 是整数类型，无法转换的设为 NaN
+        if 'ConditionID' in df_main.columns:
+            df_main['ConditionID'] = pd.to_numeric(df_main['ConditionID'], errors='coerce').astype(pd.Int64Dtype())
+            print(f"\nDEBUG: df_main ConditionID dtype after concat: {df_main['ConditionID'].dtype}")
+            print(f"DEBUG: df_main ConditionID unique values after concat: {df_main['ConditionID'].unique()[:10]}") # Print first 10 unique values
     else:
          # 如果没有主臂工况数据，创建一个空的DF，包含所有必需列，IsJibHosCon默认为"否"
          df_main = pd.DataFrame(columns=ALL_REQUIRED_COLUMNS)
@@ -567,14 +572,31 @@ def process_multiple_files(file_paths):
          return final_merged_df, list(truck_crane_ids), main_file_stats, jib_file_stats
 
     # 对主臂数据进行排序，确定前276行和后220行
-    # 排序规则：汽车吊型号 -> 工况编号 -> 工况名称 -> 主臂长 -> 幅度 -> 额定吊重
+    # 排序规则：汽车吊型号 -> 工况编号 -> 工况名称 -> 主臂长 -> 幅度
     sort_keys_main = ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange']
-    # 处理NaN值进行排序
+
+    # Create a temporary numeric column for ConditionID specifically for sorting
+    # Convert to string first to handle potential mixed types or leading/trailing spaces
     temp_df_main_sort = df_main.copy()
-    for col in sort_keys_main:
-        if col in temp_df_main_sort.columns:
-            temp_df_main_sort[col] = pd.to_numeric(temp_df_main_sort[col], errors='coerce').fillna(np.inf) # 数值列NaN填充无穷大
-    df_main_sorted = df_main.iloc[temp_df_main_sort.sort_values(by=sort_keys_main).index].reset_index(drop=True)
+
+    # Ensure ConditionID is treated as string for initial cleaning
+    temp_df_main_sort['ConditionID_str'] = temp_df_main_sort['ConditionID'].astype(str).str.strip()
+
+    # Convert cleaned string to numeric, coercing errors to NaN
+    temp_df_main_sort['ConditionID_numeric_sort'] = pd.to_numeric(temp_df_main_sort['ConditionID_str'], errors='coerce')
+
+    # Fill NaN/NaT values in the numeric sort column with a large value to ensure they sort at the end
+    import sys
+    temp_df_main_sort['ConditionID_numeric_sort'] = temp_df_main_sort['ConditionID_numeric_sort'].fillna(sys.maxsize)
+
+    print(f"DEBUG: temp_df_main_sort ConditionID_str unique values: {temp_df_main_sort['ConditionID_str'].unique()[:10]}")
+    print(f"DEBUG: temp_df_main_sort ConditionID_numeric_sort unique values: {temp_df_main_sort['ConditionID_numeric_sort'].unique()[:10]}")
+
+    # Use the new numeric column for sorting ConditionID
+    sort_keys_main_numeric = ['TruckCraneID', 'ConditionID_numeric_sort', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange']
+
+    # Apply the sort using the temporary numeric column
+    df_main_sorted = df_main.iloc[temp_df_main_sort.sort_values(by=sort_keys_main_numeric).index].reset_index(drop=True)
 
     # 分割主臂数据
     df_main_part1 = df_main_sorted.head(len(df_jib)) # 前276行 (与副臂数据行数一致)
@@ -626,27 +648,49 @@ def process_multiple_files(file_paths):
     # 纵向合并融合部分和剩余主臂部分
     final_merged_df = pd.concat([fused_part1, df_main_part2_final], ignore_index=True)
 
+    # 强制确保最终 merged df 的 ConditionID 是整数类型，无法转换的设为 NaN
+    if 'ConditionID' in final_merged_df.columns:
+        final_merged_df['ConditionID'] = pd.to_numeric(final_merged_df['ConditionID'], errors='coerce').astype(pd.Int64Dtype())
+        print(f"\nDEBUG: final_merged_df ConditionID dtype before final sort: {final_merged_df['ConditionID'].dtype}")
+        print(f"DEBUG: final_merged_df ConditionID unique values before final sort: {final_merged_df['ConditionID'].unique()[:10]}") # Print first 10 unique values
+
     # 最终按照您要求的顺序排序
     # 排序规则：汽车吊型号 -> 工况编号 -> 工况名称 -> 主臂长 -> 幅度 -> 额定吊重
-    user_sort_keys = ['ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+    user_sort_keys_final = ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
 
-    # 处理排序键中的NaN和非数字
+    # Create a temporary dataframe for final sorting
     temp_df_final_sort = final_merged_df.copy()
-    for col in user_sort_keys:
-        if col in temp_df_final_sort.columns:
-            temp_df_final_sort[col] = pd.to_numeric(temp_df_final_sort[col], errors='coerce').fillna(np.inf)
+
+    # Ensure ConditionID is treated as string for initial cleaning in final sort
+    temp_df_final_sort['ConditionID_str_final'] = temp_df_final_sort['ConditionID'].astype(str).str.strip()
+
+    # Convert cleaned string to numeric, coercing errors to NaN
+    temp_df_final_sort['ConditionID_numeric_sort_final'] = pd.to_numeric(temp_df_final_sort['ConditionID_str_final'], errors='coerce')
+
+    # Fill NaN/NaT values in the final numeric sort column with a large value
+    temp_df_final_sort['ConditionID_numeric_sort_final'] = temp_df_final_sort['ConditionID_numeric_sort_final'].fillna(sys.maxsize)
+
+    print(f"DEBUG: temp_df_final_sort ConditionID_str_final unique values: {temp_df_final_sort['ConditionID_str_final'].unique()[:10]}")
+    print(f"DEBUG: temp_df_final_sort ConditionID_numeric_sort_final unique values: {temp_df_final_sort['ConditionID_numeric_sort_final'].unique()[:10]}")
 
     # IsJibHosCon排序 (否=0, 是=1)
     temp_df_final_sort['IsJibHosCon_sort'] = temp_df_final_sort['IsJibHosCon'].apply(lambda x: 0 if x == "否" else 1)
-    
-    # Combine TruckCraneID, IsJibHosCon_sort, and user_sort_keys for final sorting
-    final_combined_sort_keys = ['TruckCraneID', 'IsJibHosCon_sort'] + user_sort_keys
-    
-    final_merged_df = final_merged_df.iloc[temp_df_final_sort.sort_values(by=final_combined_sort_keys).index].reset_index(drop=True)
-    
+
+    # Combine TruckCraneID, IsJibHosCon_sort, and user_sort_keys_final for final sorting
+    # Note: IsJibHosCon_sort ensures '否' comes before '是' if needed, though not explicitly in user_sort_keys
+    # Use the numeric sort column for ConditionID in the final sort
+    final_combined_sort_keys_numeric = ['TruckCraneID', 'ConditionID_numeric_sort_final', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+
+    # Apply the final sort using the temporary numeric column for ConditionID
+    final_merged_df = final_merged_df.iloc[temp_df_final_sort.sort_values(by=final_combined_sort_keys_numeric).index].reset_index(drop=True)
+
     # 删除辅助排序列
+    # Note: Removing temporary columns from the original final_merged_df dataframe before returning
     if 'IsJibHosCon_sort' in final_merged_df.columns:
          final_merged_df = final_merged_df.drop(columns=['IsJibHosCon_sort'])
+
+    # No need to drop ConditionID_numeric_sort_final and ConditionID_str_final from final_merged_df
+    # as they were created and used only in temp_df_final_sort
 
     # 确保最终DF的列顺序正确
     final_merged_df = final_merged_df[ALL_REQUIRED_COLUMNS]
