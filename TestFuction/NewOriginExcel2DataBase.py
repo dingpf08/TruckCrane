@@ -729,7 +729,7 @@ def main():
 
         # 统计信息输出到txt
         stat_lines = []
-        stat_lines.append("--- 文件处理统计 ---")
+        stat_lines.append("========== 文件处理详情 ==========")
         stat_lines.append("")
         stat_lines.append(f"总共选择了 {len(file_paths)} 个文件")
         stat_lines.append(f"成功处理的文件个数: {len(main_file_stats) + len(jib_file_stats)}")
@@ -757,7 +757,7 @@ def main():
         stat_lines.append("")
 
         # 现有的总统计信息 (基于最终合并后的数据)
-        stat_lines.append("--- 合并数据总统计 ---")
+        stat_lines.append("========== 汇总统计 ==========")
         stat_lines.append("")
         total_rows = len(merged_df) if not merged_df.empty else 0 # 使用最终合并后的DF总行数
         rows_with_jib = merged_df[merged_df['IsJibHosCon'] == "是"].shape[0] if not merged_df.empty and 'IsJibHosCon' in merged_df.columns else 0
@@ -823,21 +823,19 @@ def main():
              print(f"\n错误: 无法写入统计信息文件 {stat_path}: {write_error}")
 
 
-        # 提醒用户是否打开txt
-        if os.path.exists(stat_path) and messagebox.askyesno("统计信息", f"统计信息已保存到:\\n{stat_path}\\n\\n是否现在打开该文件？"):
-            import subprocess
-            import platform
-            try:
-                if platform.system() == "Windows":
-                    os.startfile(stat_path)
-                elif platform.system() == "Darwin":
-                    subprocess.Popen(["open", stat_path])
-                else:
-                    subprocess.Popen(["xdg-open", stat_path])
-            except FileNotFoundError:
-                 messagebox.showerror("错误", f"无法找到打开 {stat_path} 的应用程序。")
-            except Exception as open_error:
-                 messagebox.showerror("打开文件错误", f"打开文件时发生错误: {open_error}")
+        # 显示成功消息
+        success_msg = (
+            f"成功处理 {len(file_paths)} 个文件\n"
+            f"总计数据: {total_rows} 行\n"
+            f"包含副臂数据的行数: {rows_with_jib} 行\n"
+            f"纯主臂数据行数: {total_rows - rows_with_jib} 行\n"
+            f"汽车吊型号数量: {unique_crane_models} 个\n"
+            f"不同主臂工况数量: {merged_df['TruckCraneID'].nunique()} 个\n"
+            f"输出Excel文件: {os.path.basename(output_path)}\n"
+            f"输出统计Txt文件: {os.path.basename(stat_path)}"
+        )
+                      
+        messagebox.showinfo("处理完成", success_msg)
 
 
     except Exception as e:
