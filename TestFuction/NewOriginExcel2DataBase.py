@@ -61,7 +61,7 @@
         SecondMainArmLen            副臂主臂长
         SecondTruckCraneRatedLiftingCap 副臂额定吊重
     - 主臂工况：IsJibHosCon为"否"，副臂相关字段为空或0。
-    - 主臂+副臂工况：IsJibHosCon为"是"，副臂相关字段填充对应数据。
+    - 如果有主臂+副臂工况：IsJibHosCon修改为"是"，在主臂工况后面的副臂相关字段填充对应数据。
     - 排序规则：
         1. 汽车吊型号（TruckCraneID）
         2. 工况编号（ConditionID）
@@ -85,6 +85,14 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 
+# 定义最终输出的所有列
+ALL_REQUIRED_COLUMNS = [
+    'TruckCraneID', 'ConditionID', 'SpeWorkCondition', 
+    'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap',
+    'IsJibHosCon', 'SecondSpeWorkCondition', 'SecondElevation',
+    'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap'
+]
+
 def extract_info_from_filename(filename):
     """
     从文件名中提取信息，可以处理两种格式的文件名：
@@ -97,7 +105,7 @@ def extract_info_from_filename(filename):
     Returns:
         tuple: (汽车吊型号, 工况编号, 工况名称, 是否为副臂工况, 副臂工况名称)
                对于主臂工况，副臂工况名称为None
-               对于副臂工况，工况编号为None
+               对于副臂工况，工况编号和工况名称为None
     """
     try:
         # 提取文件名 (不含扩展名)
@@ -128,6 +136,121 @@ def extract_info_from_filename(filename):
     except Exception as e:
         raise ValueError(f"处理文件名 '{filename}' 时出错: {str(e)}")
 
+def process_main_excel_file(file_path):
+    """
+    处理主臂Excel文件，将交叉表转换为数据库格式
+    主臂工况：行=幅度，列=主臂长，数据区=额定吊重
+    
+    Args:
+        file_path (str): Excel文件路径
+    Returns:
+        DataFrame: 转换后的数据库格式数据
+    Raises:
+        ValueError: 如果文件处理失败或未提取到有效数据
+    """
+    try:
+        print(f"  - 开始读取主臂文件: {file_path}")
+        df = pd.read_excel(file_path, header=None, engine='openpyxl')
+        if df.empty:
+            raise ValueError("Excel文件不包含数据")
+        print(f"  - 主臂表格尺寸: {df.shape[0]}行 x {df.shape[1]}列")
+        if df.shape[0] < 2 or df.shape[1] < 2:
+            raise ValueError("Excel表格至少需要2行2列")
+
+        # 从文件名提取信息
+        file_name = os.path.basename(file_path)
+        truck_crane_id, condition_id, work_condition, _, _ = extract_info_from_filename(file_name)
+
+        # 获取幅度（行索引，从第2行开始，第1列）
+        ranges = df.iloc[1:, 0].values
+        # 获取主臂长（列索引，第1行，从第2列开始）
+        arm_lengths = df.iloc[0, 1:].values
+
+        # 数据清理和提取
+        results = []
+        
+        clean_ranges = []
+        for i, val in enumerate(ranges):
+            try:
+                if pd.isna(val): continue
+                clean_val = float(str(val).strip())
+                clean_ranges.append((i, clean_val))
+            except ValueError:
+                print(f"Warning: 无法解析幅度值 '{val}' 在行 {i+2}: 跳过.")
+
+        clean_arm_lengths = []
+        for j, val in enumerate(arm_lengths):
+            try:
+                if pd.isna(val): continue
+                clean_val = float(str(val).strip())
+                clean_arm_lengths.append((j, clean_val))
+            except ValueError:
+                print(f"Warning: 无法解析主臂长值 '{val}' 在列 {j+2}: 跳过.")
+
+        if not clean_ranges or not clean_arm_lengths:
+            raise ValueError("未能提取到有效的幅度或主臂长数据")
+
+        for i, range_val in clean_ranges:
+            for j, arm_len in clean_arm_lengths:
+                try:
+                    lifting_cap = df.iloc[i+1, j+1]
+                    if pd.isna(lifting_cap) or (isinstance(lifting_cap, str) and not str(lifting_cap).strip()):
+                        continue # 跳过空值或只有空白字符串的单元格
+
+                    try:
+                        lifting_cap_val = float(str(lifting_cap).strip())
+                    except ValueError:
+                        print(f"Warning: 无法将值 '{lifting_cap}' 转换为数字，跳过 (行={i+2}, 列={j+2})")
+                        continue
+                    
+                    if lifting_cap_val <= 0: continue # 跳过小于等于0的吊重
+
+                    results.append({
+                        'TruckCraneID': truck_crane_id,
+                        'ConditionID': condition_id,
+                        'SpeWorkCondition': work_condition,
+                        'TruckCraneRange': range_val,
+                        'TruckCraneMainArmLen': arm_len,
+                        'TruckCraneRatedLiftingCap': lifting_cap_val,
+                        'IsJibHosCon': "否",
+                        'SecondSpeWorkCondition': "",
+                        'SecondElevation': 0.0,
+                        'SecondMainArmLen': 0.0,
+                        'SecondTruckCraneRatedLiftingCap': 0.0
+                    })
+                except Exception as e:
+                    print(f"Warning: 处理主臂数据时出错 (行={i+2}, 列={j+2}): {str(e)}")
+                    continue
+
+        result_df = pd.DataFrame(results, columns=ALL_REQUIRED_COLUMNS)
+        
+        if result_df.empty:
+            raise ValueError("无法从Excel提取有效主臂数据")
+
+        # 确保主臂相关的数值列是数值类型
+        for col in ['ConditionID', 'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap']:
+            if col in result_df.columns:
+                result_df[col] = pd.to_numeric(result_df[col], errors='coerce')
+
+        # 确保副臂相关的数值列是数值类型，并填充默认值0
+        for col in ['SecondElevation', 'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap']:
+            if col in result_df.columns:
+                result_df[col] = pd.to_numeric(result_df[col], errors='coerce').fillna(0.0)
+
+        # 确保字符串列填充默认值""
+        for col in ['SpeWorkCondition', 'IsJibHosCon', 'SecondSpeWorkCondition']:
+            if col in result_df.columns:
+                result_df[col] = result_df[col].astype(str).replace('nan', '').replace('None', '').fillna('')
+        result_df['IsJibHosCon'] = "否"
+
+        return result_df
+
+    except Exception as e:
+        # 打印更详细的错误信息，包括文件名和错误内容
+        print(f"Error processing main arm file {os.path.basename(file_path)}: {e}")
+        # 捕获并重新抛出更明确的错误
+        raise ValueError(f"处理主臂文件 '{os.path.basename(file_path)}' 时出错: {str(e)}")
+
 def process_jib_excel_file(file_path):
     """
     处理主臂+副臂Excel文件，将特定布局的交叉表转换为数据库格式。
@@ -156,7 +279,7 @@ def process_jib_excel_file(file_path):
         
         # 提取文件名中的基本信息
         file_name = os.path.basename(file_path)
-        truck_crane_id, _, _, is_jib, jib_condition_from_filename = extract_info_from_filename(file_name)
+        truck_crane_id, _, _, _, jib_condition_from_filename = extract_info_from_filename(file_name)
         
         results = []
         
@@ -192,13 +315,13 @@ def process_jib_excel_file(file_path):
 
                 if pd.isna(lifting_cap) or (isinstance(lifting_cap, str) and not str(lifting_cap).strip()):
                     continue # 跳过空值或只有空白字符串的单元格
-
+                
                 try:
                     lifting_cap_val = float(str(lifting_cap).strip())
                 except ValueError:
-                    print(f"Warning: 无法解析第一个工况额定吊重值 '{lifting_cap}' 在行 {i+3}, 列 {data_col+1}, 跳过.")
-                    continue
-                
+                     print(f"Warning: 无法解析第一个工况额定吊重值 '{lifting_cap}' 在行 {i+3}, 列 {data_col+1}, 跳过.")
+                     continue
+
                 if lifting_cap_val <= 0: continue # 跳过小于等于0的吊重
 
                 # 查找当前列对应的幅度值
@@ -219,15 +342,15 @@ def process_jib_excel_file(file_path):
 
                 results.append({
                     'TruckCraneID': truck_crane_id,
-                    'ConditionID': None, # 副臂工况没有ConditionID
-                    'SpeWorkCondition': None, # 副臂工况没有主臂工况名称
-                    'TruckCraneRange': range_val, # 副臂工况的Range
-                    'TruckCraneMainArmLen': None, # 副臂工况没有主臂长度的概念在数据中直接体现
-                    'TruckCraneRatedLiftingCap': None, # 副臂工况的主臂额定吊重不适用
+                    'ConditionID': None, # 副臂工况没有ConditionID，填充None
+                    'SpeWorkCondition': None, # 副臂工况没有主臂工况名称，填充None
+                    'TruckCraneRange': None, # 副臂工况没有主臂幅度，填充None
+                    'TruckCraneMainArmLen': None, # 副臂工况没有主臂长度的概念直接体现在这里，填充None
+                    'TruckCraneRatedLiftingCap': None, # 副臂工况没有主臂额定吊重，填充None
                     'IsJibHosCon': "是",
                     'SecondSpeWorkCondition': jib_condition_1,
                     'SecondElevation': elevation_val,
-                    'SecondMainArmLen': None, # 副臂主臂长可能需要从名称或仰角推断，这里先留空
+                    'SecondMainArmLen': None, # 副臂主臂长可能需要从名称或仰角推断，这里先留空，后续可填充
                     'SecondTruckCraneRatedLiftingCap': lifting_cap_val
                 })
         
@@ -291,7 +414,7 @@ def process_jib_excel_file(file_path):
                     'TruckCraneID': truck_crane_id,
                     'ConditionID': None,
                     'SpeWorkCondition': None,
-                    'TruckCraneRange': range_val, # 副臂工况的Range
+                    'TruckCraneRange': None, # 副臂工况没有主臂幅度
                     'TruckCraneMainArmLen': None,
                     'TruckCraneRatedLiftingCap': None,
                     'IsJibHosCon': "是",
@@ -301,14 +424,27 @@ def process_jib_excel_file(file_path):
                     'SecondTruckCraneRatedLiftingCap': lifting_cap_val
                 })
 
-        result_df = pd.DataFrame(results)
+        result_df = pd.DataFrame(results, columns=ALL_REQUIRED_COLUMNS)
         
         if result_df.empty:
             raise ValueError("未能从副臂文件提取到有效数据")
 
-        # 副臂数据不需要主臂工况的排序字段，但需要确保所有列存在
-        # 在 process_multiple_files 中会进行最终合并和列处理
-        
+        # 确保副臂相关的数值列是数值类型
+        for col in ['SecondElevation', 'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap']:
+             if col in result_df.columns:
+                  result_df[col] = pd.to_numeric(result_df[col], errors='coerce')
+
+        # 确保主臂相关的数值列填充默认值
+        for col in ['ConditionID', 'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap']:
+             if col in result_df.columns:
+                 result_df[col] = pd.to_numeric(result_df[col], errors='coerce').fillna(np.nan)
+
+        # 确保字符串列填充默认值""或"是"
+        for col in ['SpeWorkCondition', 'IsJibHosCon', 'SecondSpeWorkCondition']:
+             if col in result_df.columns:
+                 result_df[col] = result_df[col].astype(str).replace('nan', '').replace('None', '').fillna('')
+        result_df['IsJibHosCon'] = "是"
+
         return result_df
 
     except Exception as e:
@@ -317,122 +453,9 @@ def process_jib_excel_file(file_path):
         # 捕获并重新抛出更明确的错误
         raise ValueError(f"处理主臂+副臂文件 '{os.path.basename(file_path)}' 时出错: {str(e)}")
 
-def process_excel_file(file_path):
-    """
-    处理单个Excel文件，将交叉表转换为数据库格式
-    主臂工况：行=幅度，列=主臂长，数据区=额定吊重
-    Args:
-        file_path (str): Excel文件路径
-    Returns:
-        tuple: (DataFrame, 汽车吊型号, 是否为副臂工况文件)
-    """
-    # 从文件名提取信息
-    file_name = os.path.basename(file_path)
-    truck_crane_id, condition_id, work_condition, is_jib, jib_condition = extract_info_from_filename(file_name)
-    
-    # 根据文件名判断是否为副臂工况文件
-    if is_jib:
-        # 如果是副臂工况文件，使用专门的处理函数
-        # process_jib_excel_file 返回的是 DataFrame，直接返回即可
-        print(f"Detected jib file: {file_name}") # 添加日志确认识别到副臂文件
-        return process_jib_excel_file(file_path), truck_crane_id, True
-    
-    # 以下是处理主臂工况文件的代码
-    try:
-        print(f"  - 开始读取主臂文件: {file_path}") # 修改日志以区分
-        df = pd.read_excel(file_path, header=None, engine='openpyxl')
-        if df.empty:
-            raise ValueError("Excel文件不包含数据")
-        print(f"  - 主臂表格尺寸: {df.shape[0]}行 x {df.shape[1]}列") # 修改日志以区分
-        if df.shape[0] < 2 or df.shape[1] < 2:
-            raise ValueError("Excel表格至少需要2行2列")
-        # 获取幅度（行索引，从第2行开始，第1列）
-        ranges = df.iloc[1:, 0].values
-        # 获取主臂长（列索引，第1行，从第2列开始）
-        arm_lengths = df.iloc[0, 1:].values
-        # 数据清理
-        clean_ranges = []
-        for i, val in enumerate(ranges):
-            try:
-                if pd.isna(val):
-                    continue
-                if isinstance(val, str):
-                    clean_val = ''.join(c for c in val if c.isdigit() or c == '.')
-                    if clean_val:
-                        clean_ranges.append((i, float(clean_val)))
-                else:
-                    clean_ranges.append((i, float(val)))
-            except Exception as e:
-                print(f"Warning: 无法解析幅度值 '{val}' 在行 {i+2}: {str(e)}")
-        if not clean_ranges:
-            raise ValueError("未能提取到有效的幅度数据")
-        clean_arm_lengths = []
-        for j, val in enumerate(arm_lengths):
-            try:
-                if pd.isna(val):
-                    continue
-                if isinstance(val, str):
-                    clean_val = ''.join(c for c in val if c.isdigit() or c == '.')
-                    if clean_val:
-                        clean_arm_lengths.append((j, float(clean_val)))
-                else:
-                    clean_arm_lengths.append((j, float(val)))
-            except Exception as e:
-                print(f"Warning: 无法解析主臂长值 '{val}' 在列 {j+2}: {str(e)}")
-        if not clean_arm_lengths:
-            raise ValueError("未能提取到有效的主臂长数据")
-        results = []
-        for i, range_val in clean_ranges:
-            for j, arm_len in clean_arm_lengths:
-                try:
-                    lifting_cap = df.iloc[i+1, j+1]
-                    if pd.isna(lifting_cap):
-                        continue
-                    if isinstance(lifting_cap, str):
-                        lifting_cap = lifting_cap.strip()
-                        if not lifting_cap:
-                            continue
-                        clean_val = ''.join(c for c in lifting_cap if c.isdigit() or c == '.')
-                        if not clean_val:
-                            continue
-                        try:
-                            lifting_cap = float(clean_val)
-                        except:
-                            print(f"Warning: 无法将值 '{lifting_cap}' 转换为数字，跳过 (行={i+2}, 列={j+2})")
-                            continue
-                    else:
-                        try:
-                            lifting_cap = float(lifting_cap)
-                        except:
-                            print(f"Warning: 无法将值 '{lifting_cap}' 转换为数字，跳过 (行={i+2}, 列={j+2})")
-                            continue
-                    if lifting_cap <= 0:
-                        continue
-                    results.append({
-                        'TruckCraneID': truck_crane_id,
-                        'ConditionID': condition_id,
-                        'SpeWorkCondition': work_condition,
-                        'TruckCraneRange': range_val,
-                        'TruckCraneMainArmLen': arm_len,
-                        'TruckCraneRatedLiftingCap': lifting_cap,
-                        'IsJibHosCon': "否",
-                        'SecondSpeWorkCondition': "",
-                        'SecondElevation': 0,
-                        'SecondMainArmLen': 0,
-                        'SecondTruckCraneRatedLiftingCap': 0
-                    })
-                except Exception as e:
-                    print(f"Warning: 处理数据时出错 (行={i+2}, 列={j+2}): {str(e)}")
-        result_df = pd.DataFrame(results)
-        if result_df.empty:
-            raise ValueError("无法从Excel提取有效数据")
-        return result_df, truck_crane_id, False # 主臂工况返回False
-    except Exception as e:
-        raise ValueError(f"处理文件 '{file_path}' 时出错: {str(e)}")
-
 def process_multiple_files(file_paths):
     """
-    处理多个Excel文件并合并结果
+    处理多个Excel文件，将数据融合并合并结果到496行。
     Args:
         file_paths (list): Excel文件路径列表
     Returns:
@@ -440,137 +463,178 @@ def process_multiple_files(file_paths):
     """
     if not file_paths:
         raise ValueError("没有选择文件")
-    main_data = []  # 存储主臂工况df
-    jib_data = []   # 存储副臂工况df
+
+    main_data_list = []  # 存储主臂工况df列表
+    jib_data_list = []   # 存储副臂工况df列表
     truck_crane_ids = set()
     processed_count = 0
     error_count = 0
 
-    # 新增：存储每个文件的统计信息 (文件名, 条数)
-    main_file_stats = []
-    jib_file_stats = []
-
+    main_file_stats = [] # 存储每个主臂文件的统计信息 (文件名, 条数)
+    jib_file_stats = []  # 存储每个副臂文件的统计信息 (文件名, 条数)
+    
+    # 分类并初步处理文件
     for file_path in file_paths:
         try:
             print(f"\n处理文件: {os.path.basename(file_path)}")
-            df, truck_crane_id, is_jib = process_excel_file(file_path)
-            file_name = os.path.basename(file_path) # 获取文件名
+            file_name = os.path.basename(file_path)
+            _, _, _, is_jib, _ = extract_info_from_filename(file_name)
 
-            # 根据文件类型分别存储数据和统计信息
             if is_jib:
-                jib_data.append(df)
+                df = process_jib_excel_file(file_path)
+                jib_data_list.append(df)
                 jib_file_stats.append((file_name, len(df))) # 记录文件名和条数
             else:
-                main_data.append(df)
+                df = process_main_excel_file(file_path)
+                main_data_list.append(df)
                 main_file_stats.append((file_name, len(df))) # 记录文件名和条数
+                
+            # 提取汽车吊型号（从任一成功处理的文件中获取）
+            if not df.empty and 'TruckCraneID' in df.columns:
+                 crane_id = df['TruckCraneID'].iloc[0] # 假设同一批文件是同一型号
+                 if pd.notna(crane_id) and crane_id.strip():
+                      truck_crane_ids.add(crane_id)
 
-            truck_crane_ids.add(truck_crane_id)
             processed_count += 1
-            print(f"  - 成功处理: {len(df)} 行数据")
-        except Exception as e:
+            print(f"  - 成功处理: {len(df)} 行原始数据")
+        except ValueError as ve:
             error_count += 1
-            print(f"  - 错误: 处理文件 '{os.path.basename(file_path)}' 时出错: {str(e)}") # 明确哪个文件出错
+            print(f"  - 错误: 处理文件 '{os.path.basename(file_path)}' 时出错: {str(ve)}") # 打印具体错误信息
+        except Exception as e:
+             error_count += 1
+             print(f"  - 未预期的错误: 处理文件 '{os.path.basename(file_path)}' 时出错: {str(e)}") # 打印具体错误信息
 
     print(f"\n处理统计:")
     print(f"  - 成功处理: {processed_count} 个文件")
     print(f"  - 处理失败: {error_count} 个文件")
 
-    if not main_data and not jib_data:
+    if not main_data_list and not jib_data_list:
         raise ValueError("所有文件处理失败，未能提取任何有效数据")
 
-    # 合并主臂数据
-    if main_data:
-        merged_main_df = pd.concat(main_data, ignore_index=True)
+    # 合并所有主臂数据
+    if main_data_list:
+        df_main = pd.concat(main_data_list, ignore_index=True)
     else:
-         # 如果没有主臂工况数据，创建一个空的DF，包含所有必需列
-         merged_main_df = pd.DataFrame(columns=[\
-              'TruckCraneID', 'ConditionID', 'SpeWorkCondition',
-              'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap',\
-              'IsJibHosCon', 'SecondSpeWorkCondition', 'SecondElevation',\
-              'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap'\
-         ])
+         # 如果没有主臂工况数据，创建一个空的DF，包含所有必需列，IsJibHosCon默认为"否"
+         df_main = pd.DataFrame(columns=ALL_REQUIRED_COLUMNS)
+         df_main['IsJibHosCon'] = "否"
 
-    # 合并副臂数据
-    if jib_data:
-        merged_jib_df = pd.concat(jib_data, ignore_index=True)
+    # 合并所有副臂数据
+    if jib_data_list:
+        df_jib = pd.concat(jib_data_list, ignore_index=True)
     else:
-        merged_jib_df = pd.DataFrame(columns=[\
-              'TruckCraneID', 'SecondSpeWorkCondition', 'SecondElevation',\
-              'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap'\
-        ]) # 创建空DF确保列存在
+        # 如果没有副臂工况数据，创建一个空的DF，包含所有必需列，IsJibHosCon默认为"是"
+        df_jib = pd.DataFrame(columns=ALL_REQUIRED_COLUMNS)
+        df_jib['IsJibHosCon'] = "是"
+    
+    # --- 实现数据融合和合并逻辑 (生成496行) ---
+    final_merged_df = pd.DataFrame(columns=ALL_REQUIRED_COLUMNS) # 最终的DF，共496行
 
-    # 确保主臂数据DF包含所有必需列（即使只有副臂文件被选中）
-    required_columns = [\
-        'TruckCraneID', 'ConditionID', 'SpeWorkCondition',
-        'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap',\
-        'IsJibHosCon', 'SecondSpeWorkCondition', 'SecondElevation',\
-        'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap'\
-    ]
+    # 确保主臂数据条数 >= 276，以便进行融合
+    if len(df_main) < len(df_jib):
+         print(f"Warning: 主臂数据 ({len(df_main)} 行) 少于副臂数据 ({len(df_jib)} 行). 无法进行融合操作以得到496行.")
+         # 这种情况下，无法按照要求的496行格式输出。可以考虑直接输出总的772行或者报错。
+         # 根据需求，这里选择报错或者返回空DF
+         # 为了不中断流程，这里先返回一个包含所有主臂数据和副臂数据的DF，并打印警告。
+         # 更好的做法是根据用户需求决定是报错还是切换到其他输出模式
+         print("将直接合并所有主臂和副臂数据 (总计 772 行).")
+         final_merged_df = pd.concat([df_main, df_jib], ignore_index=True)
+         # 返回合并后的772行数据，并保留原始统计信息
+         return final_merged_df, list(truck_crane_ids), main_file_stats, jib_file_stats
 
-    # 添加缺失的列并设置默认值
-    for col in required_columns:
-        if col not in merged_main_df.columns:
-             merged_main_df[col] = 0 if col not in ['TruckCraneID', 'SpeWorkCondition', 'SecondSpeWorkCondition', 'IsJibHosCon'] else ""
-        # 确保 IsJibHosCon 默认为 "否"
-        if col == 'IsJibHosCon' and merged_main_df[col].dtype != 'object':
-             merged_main_df[col] = merged_main_df[col].astype(str).replace('0', '否')
+    # 对主臂数据进行排序，确定前276行和后220行
+    # 排序规则：汽车吊型号 -> 工况编号 -> 主臂长 -> 幅度 -> 额定吊重
+    sort_keys_main = ['TruckCraneID', 'ConditionID', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+    # 处理NaN值进行排序
+    temp_df_main_sort = df_main.copy()
+    for col in sort_keys_main:
+        if col in temp_df_main_sort.columns:
+            temp_df_main_sort[col] = pd.to_numeric(temp_df_main_sort[col], errors='coerce').fillna(np.inf) # 数值列NaN填充无穷大
+    df_main_sorted = df_main.iloc[temp_df_main_sort.sort_values(by=sort_keys_main).index].reset_index(drop=True)
 
+    # 分割主臂数据
+    df_main_part1 = df_main_sorted.head(len(df_jib)) # 前276行 (与副臂数据行数一致)
+    df_main_part2 = df_main_sorted.iloc[len(df_jib):] # 后220行
 
-    # 排序：主臂工况编号 -> 主臂长度 -> 主臂额定起重量 (仅对主臂数据进行此排序)
-    # 副臂数据将在后续合并，它们的顺序可能需要另外处理或保持解析时的顺序
-    # 如果只有副臂数据，这一步不应该执行基于主臂字段的排序
-    if not merged_main_df.empty and not main_data: # 如果merged_main_df非空但main_data空，说明是从纯副臂数据构建的空主臂DF
-         # 只有副臂数据，不需要按主臂工况字段排序
-         pass # 或者可以按副臂相关字段排序
-    elif not merged_main_df.empty: # 如果有主臂数据，或者合并了主臂和副臂数据
-         # 先确保排序键存在且是非空，避免只有副臂数据时出错
-         sort_keys = []
-         if 'ConditionID' in merged_main_df.columns and merged_main_df['ConditionID'].dropna().astype(str).str.strip().any(): sort_keys.append('ConditionID')
-         if 'TruckCraneMainArmLen' in merged_main_df.columns and merged_main_df['TruckCraneMainArmLen'].dropna().astype(str).str.strip().any(): sort_keys.append('TruckCraneMainArmLen')
-         if 'TruckCraneRatedLiftingCap' in merged_main_df.columns and merged_main_df['TruckCraneRatedLiftingCap'].dropna().astype(str).str.strip().any(): sort_keys.append('TruckCraneRatedLiftingCap')
+    # 准备副臂数据 (只保留需要融合的右侧列 + IsJibHosCon)
+    # df_jib 已经包含了所有列且IsJibHosCon="是"，主臂列为默认值
+    df_jib_for_merge = df_jib.copy()
 
-         # 如果有主臂工况相关的排序键，就按这些键排序
-         if sort_keys:
-             # 过滤出主臂数据部分进行排序，再与其他数据合并？
-             # 更简单的做法是对整个DF排序，确保副臂数据不会干扰主臂排序
-             # 需要处理None值，将None转换为一个排序友好的值 (如最大或最小值)
-             temp_df_for_sort = merged_main_df.copy()
-             for key in sort_keys:
-                  # 将非数值和None值转换为一个大数，确保它们排在后面
-                 temp_df_for_sort[key] = pd.to_numeric(temp_df_for_sort[key], errors='coerce').fillna(np.nan) # 先转数字，非数字变NaN
-                 temp_df_for_sort[key] = temp_df_for_sort[key].fillna(temp_df_for_sort[key].max() + 1 if not temp_df_for_sort[key].isnull().all() else 0) # NaN填充一个大数，全NaN填充0
+    # --- 融合数据 (前276行) ---
+    # 创建一个空的DF用于存储融合后的前276行
+    fused_part1 = pd.DataFrame(index=range(len(df_jib)), columns=ALL_REQUIRED_COLUMNS)
 
-             merged_main_df = merged_main_df.iloc[temp_df_for_sort.sort_values(by=sort_keys).index].reset_index(drop=True)
+    # 填充左侧主臂数据 (来自df_main_part1)
+    for col in ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap']:
+         if col in df_main_part1.columns:
+              fused_part1[col] = df_main_part1[col].reset_index(drop=True)
 
+    # 填充右侧副臂数据 (来自df_jib)
+    for col in ['SecondSpeWorkCondition', 'SecondElevation', 'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap']:
+         if col in df_jib_for_merge.columns:
+              fused_part1[col] = df_jib_for_merge[col].reset_index(drop=True)
 
-    # 将副臂数据合并到主臂数据的末尾 (修改合并逻辑，不再是填入)
-    # 创建副臂数据的最终格式DF
-    if not merged_jib_df.empty:
-         print("\n合并副臂工况数据...")
-         temp_jib_final_df = pd.DataFrame(index=range(len(merged_jib_df)), columns=required_columns)
-         temp_jib_final_df['TruckCraneID'] = merged_jib_df['TruckCraneID']
-         temp_jib_final_df['IsJibHosCon'] = "是"
-         temp_jib_final_df['SecondSpeWorkCondition'] = merged_jib_df['SecondSpeWorkCondition']
-         temp_jib_final_df['SecondElevation'] = merged_jib_df['SecondElevation']
-         temp_jib_final_df['SecondMainArmLen'] = merged_jib_df['SecondMainArmLen']
-         temp_jib_final_df['SecondTruckCraneRatedLiftingCap'] = merged_jib_df['SecondTruckCraneRatedLiftingCap']
+    # 设置融合部分的 IsJibHosCon 为 "是"
+    fused_part1['IsJibHosCon'] = "是"
 
-         # 其他列填充默认值
-         for col in required_columns:
-              if col not in temp_jib_final_df.columns:
-                  temp_jib_final_df[col] = 0 if col not in ['TruckCraneID', 'SpeWorkCondition', 'SecondSpeWorkCondition', 'IsJibHosCon'] else ""
+    # 确保融合部分的数据类型正确 (特别是数值列)
+    for col in ['ConditionID', 'TruckCraneRange', 'TruckCraneMainArmLen', 'TruckCraneRatedLiftingCap', 'SecondElevation', 'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap']:
+         if col in fused_part1.columns:
+              fused_part1[col] = pd.to_numeric(fused_part1[col], errors='coerce')
+    
+    # 确保字符串列填充默认值
+    for col in ['SpeWorkCondition', 'IsJibHosCon', 'SecondSpeWorkCondition', 'TruckCraneID']:
+         if col in fused_part1.columns:
+              fused_part1[col] = fused_part1[col].astype(str).replace('nan', '').replace('None', '').fillna('')
+    fused_part1['IsJibHosCon'] = "是" # 再次强制设置为是
 
-         # 将主臂数据和副臂数据合并
-         final_merged_df = pd.concat([merged_main_df, temp_jib_final_df], ignore_index=True)
-    else:
-         final_merged_df = merged_main_df # 如果没有副臂数据，最终DF就是主臂数据
+    # --- 合并两部分数据 ---
+    # 后220行 (纯主臂数据)，确保Second列为默认值，IsJibHosCon为否
+    df_main_part2_final = df_main_part2.copy()
+    df_main_part2_final['IsJibHosCon'] = "否"
+    for col in ['SecondSpeWorkCondition', 'SecondElevation', 'SecondMainArmLen', 'SecondTruckCraneRatedLiftingCap']:
+         if col in df_main_part2_final.columns:
+             if df_main_part2_final[col].dtype == 'object':
+                 df_main_part2_final[col] = "" # 字符串列默认值
+             else:
+                 df_main_part2_final[col] = 0.0 # 数值列默认值
+
+    # 纵向合并融合部分和剩余主臂部分
+    final_merged_df = pd.concat([fused_part1, df_main_part2_final], ignore_index=True)
+
+    # 最终排序整个DataFrame
+    # 排序规则：汽车吊型号 -> 工况编号 -> 主臂长 -> 幅度 -> 额定吊重
+    sort_keys_final = ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+    
+    # 处理排序键中的NaN和非数字，特别是融合部分的主臂相关列可能为NaN，以及后220行副臂相关列为默认值0或""
+    temp_df_final_sort = final_merged_df.copy()
+    for col in sort_keys_final:
+        if col in temp_df_final_sort.columns:
+            # 将非数字转为NaN，然后用一个大数填充，确保NaN排在后面
+            temp_df_final_sort[col] = pd.to_numeric(temp_df_final_sort[col], errors='coerce').fillna(np.inf)
+
+    # 再次按 TruckCraneID 排序，可能需要调整排序键或处理IsJibHosCon来确保融合部分在前
+    # 简单的方法是先按 IsJibHosCon (否在前, 是在后)，再按其他主臂字段排序
+    # IsJibHosCon排序 (否=0, 是=1)
+    temp_df_final_sort['IsJibHosCon_sort'] = temp_df_final_sort['IsJibHosCon'].apply(lambda x: 0 if x == "否" else 1)
+    
+    final_sort_keys = ['TruckCraneID', 'IsJibHosCon_sort'] + sort_keys_final # 先按IsJibHosCon排，再按主臂字段排
+    
+    final_merged_df = final_merged_df.iloc[temp_df_final_sort.sort_values(by=final_sort_keys).index].reset_index(drop=True)
+    
+    # 删除辅助排序列
+    if 'IsJibHosCon_sort' in final_merged_df.columns:
+         final_merged_df = final_merged_df.drop(columns=['IsJibHosCon_sort'])
 
     # 确保最终DF的列顺序正确
-    if not final_merged_df.empty:
-         final_merged_df = final_merged_df[required_columns]
-         # 对整个合并后的DF进行最终排序（例如，按型号和工况类型区分排序）
-         # 如果需要区分主臂和副臂的排序，这里需要更复杂的逻辑
-         # 暂时保持按主臂字段排序后的结果，副臂数据会追加在后面
+    final_merged_df = final_merged_df[ALL_REQUIRED_COLUMNS]
+
+    # 确保最终输出的Total行数是496
+    if len(final_merged_df) != 496:
+         print(f"Warning: 最终合并的数据行数不等于496，实际为 {len(final_merged_df)} 行.")
+         # 可以考虑在这里进行截断或填充到496行，但这可能会丢失/增加数据，与原始意图冲突。
+         # 目前的逻辑是如果副臂数据不是276行，或者主臂数据不是496行，最终行数会不等于496。
+         # 为了符合要求，这里假设原始数据量是固定的，否则需要更复杂的处理或提示用户。
 
     return final_merged_df, list(truck_crane_ids), main_file_stats, jib_file_stats
 
@@ -650,8 +714,10 @@ def main():
         if truck_crane_ids and len(truck_crane_ids) == 1:
             base_name = f"{list(truck_crane_ids)[0]}-额定起重量表-{timestamp}.xlsx"
         else:
-            base_name = f"多种汽车吊-额定起重量表-{timestamp}.xlsx"
+            base_name = f"合并额定起重量表-{timestamp}.xlsx" # 更通用，避免文件名过长或无效字符
+
         # 默认输出到第一个输入文件的目录，如果无文件选择，则不会到这里
+        # 如果file_paths为空，则不会进入try块，所以os.path.dirname(file_paths[0])是安全的
         output_dir = os.path.dirname(file_paths[0])
         output_path = os.path.join(output_dir, base_name)
 
@@ -692,56 +758,54 @@ def main():
              stat_lines.append("  无")
         stat_lines.append("")
 
-        # 现有的总统计信息 (基于合并后的数据)
+        # 现有的总统计信息 (基于最终合并后的数据)
         stat_lines.append("--- 合并数据总统计 ---")
         stat_lines.append("")
         total_rows = len(merged_df) if not merged_df.empty else 0 # 使用最终合并后的DF总行数
-        rows_with_jib = merged_df[merged_df['IsJibHosCon'] == "是"].shape[0] if not merged_df.empty else 0
+        rows_with_jib = merged_df[merged_df['IsJibHosCon'] == "是"].shape[0] if not merged_df.empty and 'IsJibHosCon' in merged_df.columns else 0
         unique_crane_models = merged_df['TruckCraneID'].nunique() if not merged_df.empty and 'TruckCraneID' in merged_df.columns else 0
 
         stat_lines.append(f"总计数据行数 (合并后): {total_rows} 行")
         stat_lines.append(f"包含副臂数据的行数: {rows_with_jib} 行")
-        stat_lines.append(f"纯主臂数据行数: {total_rows - rows_with_jib} 行")
+        stat_lines.append(f"纯主臂数据行数: {total_rows - rows_with_jib} 行") # 注意：在融合模式下，纯主臂数据行数是剩余的220行
         stat_lines.append(f"汽车吊型号数量: {unique_crane_models} 个")
 
-        # 主臂工况名称和数据条数 (基于合并后的数据)
-        # 检查 SpeWorkCondition 列是否存在且非空
+        # 主臂工况名称和数据条数 (基于最终合并后的数据中IsJibHosCon为否的行)
         if not merged_df.empty and 'SpeWorkCondition' in merged_df.columns:
-             # 过滤出主臂数据部分，并且 SpeWorkCondition 非空
-             main_df_merged = merged_df[(merged_df['IsJibHosCon'] == "否") & (merged_df['SpeWorkCondition'].astype(str).str.strip() != "")].copy() # 创建副本并过滤
-             main_names_merged = main_df_merged['SpeWorkCondition'].astype(str).str.strip().unique().tolist() # 获取唯一名称列表
+             # 过滤出IsJibHosCon为否的行，并SpeWorkCondition非空
+             main_df_final = merged_df[(merged_df['IsJibHosCon'] == "否") & (merged_df['SpeWorkCondition'].astype(str).str.strip() != "")].copy() # 创建副本并过滤
+             main_names_final = main_df_final['SpeWorkCondition'].astype(str).str.strip().unique().tolist() # 获取唯一名称列表
              
-             stat_lines.append(f"主臂工况名称个数 (合并后): {len(main_names_merged)}")
+             stat_lines.append(f"\n主臂工况名称个数 (最终表格): {len(main_names_final)}")
              stat_lines.append("主臂工况名称及对应数据条数:")
-             if main_names_merged:
-                 for name in main_names_merged:
-                     count = main_df_merged[main_df_merged['SpeWorkCondition'].astype(str).str.strip() == name].shape[0]
+             if main_names_final:
+                 for name in main_names_final:
+                     count = main_df_final[main_df_final['SpeWorkCondition'].astype(str).str.strip() == name].shape[0]
                      stat_lines.append(f"  '{name}': {count} 条") # 加引号避免空格问题
              else:
-                  stat_lines.append("  无有效主臂工况数据")
+                  stat_lines.append("  无有效纯主臂工况数据")
         else:
-             stat_lines.append("主臂工况名称个数 (合并后): 0")
-             stat_lines.append("主臂工况名称及对应数据条数:\n  无有效主臂工况数据")
+             stat_lines.append("\n主臂工况名称个数 (最终表格): 0")
+             stat_lines.append("主臂工况名称及对应数据条数:\n  无有效纯主臂工况数据")
 
 
-        # 副臂工况名称和数据条数 (基于合并后的数据)
-        # 检查 SecondSpeWorkCondition 列是否存在且非空
+        # 副臂工况名称和数据条数 (基于最终合并后的数据中IsJibHosCon为是的行)
         if not merged_df.empty and 'SecondSpeWorkCondition' in merged_df.columns:
-            # 过滤出副臂数据部分，并且 SecondSpeWorkCondition 非空
-            jib_df_merged = merged_df[(merged_df['IsJibHosCon'] == "是") & (merged_df['SecondSpeWorkCondition'].astype(str).str.strip() != "")].copy() # 创建副本并过滤
+            # 过滤出IsJibHosCon为是的行，并SecondSpeWorkCondition非空
+            jib_df_final = merged_df[(merged_df['IsJibHosCon'] == "是") & (merged_df['SecondSpeWorkCondition'].astype(str).str.strip() != "")].copy() # 创建副本并过滤
             # 过滤掉空的副臂工况名称
-            jib_names_merged = jib_df_merged['SecondSpeWorkCondition'].astype(str).str.strip().unique().tolist() # 获取唯一名称列表
+            jib_names_final = jib_df_final['SecondSpeWorkCondition'].astype(str).str.strip().unique().tolist() # 获取唯一名称列表
 
-            stat_lines.append(f"主臂+副臂工况名称个数 (合并后): {len(jib_names_merged)}")
+            stat_lines.append(f"\n主臂+副臂工况名称个数 (最终表格): {len(jib_names_final)}")
             stat_lines.append("主臂+副臂工况名称及对应数据条数:")
-            if jib_names_merged:
-                for name in jib_names_merged:
-                    count = jib_df_merged[jib_df_merged['SecondSpeWorkCondition'].astype(str).str.strip() == name].shape[0]
+            if jib_names_final:
+                for name in jib_names_final:
+                    count = jib_df_final[jib_df_final['SecondSpeWorkCondition'].astype(str).str.strip() == name].shape[0]
                     stat_lines.append(f"  '{name}': {count} 条") # 加引号
             else:
                  stat_lines.append("  无有效主臂+副臂工况数据")
         else:
-             stat_lines.append("主臂+副臂工况名称个数 (合并后): 0")
+             stat_lines.append("\n主臂+副臂工况名称个数 (最终表格): 0")
              stat_lines.append("主臂+副臂工况名称及对应数据条数:\n  无有效主臂+副臂工况数据")
 
 
@@ -793,8 +857,9 @@ def main():
         # 更优方案是修改main函数逻辑，使其能重复使用同一Tkinter实例或进行更彻底的清理。
         # 当前实现能工作，但在某些环境下可能行为异常。
         root.destroy()
-        main()
-
+        # 重置全局状态或退出进程，这里选择退出
+        import sys
+        sys.exit()
 
 
 if __name__ == "__main__":
