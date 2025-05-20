@@ -861,11 +861,15 @@ def main():
                       
         messagebox.showinfo("处理完成", success_msg)
 
-        # 询问用户是否打开生成的文件
-        if messagebox.askyesno("操作完成", f"文件处理完成！\n\n统计信息已保存到:\n{stat_path}\n\n转换后的Excel已保存到:\n{output_path}\n\n是否现在打开这两个文件？"):
+        # 询问用户是否打开生成的文件和所在的文件夹
+        if messagebox.askyesno("操作完成", 
+                              f"文件处理完成！\n\n" +
+                              f"统计信息已保存到:\n{stat_path}\n\n" +
+                              f"转换后的Excel已保存到:\n{output_path}\n\n" +
+                              f"是否现在打开文件和所在的文件夹？"):
              import subprocess
              import platform
-             
+
              # 尝试打开统计文件
              if os.path.exists(stat_path):
                   try:
@@ -893,6 +897,20 @@ def main():
                        messagebox.showerror("错误", f"无法找到打开Excel文件 {output_path} 的应用程序。")
                   except Exception as open_error:
                        messagebox.showerror("打开Excel文件错误", f"打开Excel文件时发生错误: {open_error}")
+
+             # 尝试打开输出文件夹
+             if output_dir and os.path.exists(output_dir):
+                  try:
+                       if platform.system() == "Windows":
+                           os.startfile(output_dir)
+                       elif platform.system() == "Darwin":
+                           subprocess.Popen(["open", output_dir])
+                       else:
+                           subprocess.Popen(["xdg-open", output_dir])
+                  except FileNotFoundError:
+                       messagebox.showerror("错误", f"无法找到打开文件夹 {output_dir} 的应用程序。")
+                  except Exception as open_error:
+                       messagebox.showerror("打开文件夹错误", f"打开文件夹时发生错误: {open_error}")
 
 
     except Exception as e:
