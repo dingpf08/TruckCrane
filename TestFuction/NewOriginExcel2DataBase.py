@@ -543,8 +543,8 @@ def process_multiple_files(file_paths):
          return final_merged_df, list(truck_crane_ids), main_file_stats, jib_file_stats
 
     # 对主臂数据进行排序，确定前276行和后220行
-    # 排序规则：汽车吊型号 -> 工况编号 -> 主臂长 -> 幅度 -> 额定吊重
-    sort_keys_main = ['TruckCraneID', 'ConditionID', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+    # 排序规则：汽车吊型号 -> 工况编号 -> 工况名称 -> 主臂长 -> 幅度 -> 额定吊重
+    sort_keys_main = ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange']
     # 处理NaN值进行排序
     temp_df_main_sort = df_main.copy()
     for col in sort_keys_main:
@@ -602,25 +602,23 @@ def process_multiple_files(file_paths):
     # 纵向合并融合部分和剩余主臂部分
     final_merged_df = pd.concat([fused_part1, df_main_part2_final], ignore_index=True)
 
-    # 最终排序整个DataFrame
-    # 排序规则：汽车吊型号 -> 工况编号 -> 主臂长 -> 幅度 -> 额定吊重
-    sort_keys_final = ['TruckCraneID', 'ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
-    
-    # 处理排序键中的NaN和非数字，特别是融合部分的主臂相关列可能为NaN，以及后220行副臂相关列为默认值0或""
+    # 最终按照您要求的顺序排序
+    # 排序规则：汽车吊型号 -> 工况编号 -> 工况名称 -> 主臂长 -> 幅度 -> 额定吊重
+    user_sort_keys = ['ConditionID', 'SpeWorkCondition', 'TruckCraneMainArmLen', 'TruckCraneRange', 'TruckCraneRatedLiftingCap']
+
+    # 处理排序键中的NaN和非数字
     temp_df_final_sort = final_merged_df.copy()
-    for col in sort_keys_final:
+    for col in user_sort_keys:
         if col in temp_df_final_sort.columns:
-            # 将非数字转为NaN，然后用一个大数填充，确保NaN排在后面
             temp_df_final_sort[col] = pd.to_numeric(temp_df_final_sort[col], errors='coerce').fillna(np.inf)
 
-    # 再次按 TruckCraneID 排序，可能需要调整排序键或处理IsJibHosCon来确保融合部分在前
-    # 简单的方法是先按 IsJibHosCon (否在前, 是在后)，再按其他主臂字段排序
     # IsJibHosCon排序 (否=0, 是=1)
     temp_df_final_sort['IsJibHosCon_sort'] = temp_df_final_sort['IsJibHosCon'].apply(lambda x: 0 if x == "否" else 1)
     
-    final_sort_keys = ['TruckCraneID', 'IsJibHosCon_sort'] + sort_keys_final # 先按IsJibHosCon排，再按主臂字段排
+    # Combine TruckCraneID, IsJibHosCon_sort, and user_sort_keys for final sorting
+    final_combined_sort_keys = ['TruckCraneID', 'IsJibHosCon_sort'] + user_sort_keys
     
-    final_merged_df = final_merged_df.iloc[temp_df_final_sort.sort_values(by=final_sort_keys).index].reset_index(drop=True)
+    final_merged_df = final_merged_df.iloc[temp_df_final_sort.sort_values(by=final_combined_sort_keys).index].reset_index(drop=True)
     
     # 删除辅助排序列
     if 'IsJibHosCon_sort' in final_merged_df.columns:
